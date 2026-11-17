@@ -1,0 +1,2 @@
+.file-tree { background: var(--sv-pane-bg); font-family: var(--svs-font-ui); }
+.file-tree .b3-list-item { border-radius: var(--svs-radius); font-size: 14px; }

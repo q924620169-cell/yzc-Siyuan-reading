@@ -1,0 +1,2 @@
+/** Keep only this reader origin's generated resource blobs, alongside normal safe URLs. */
+export function sanitizerOptions(origin){const escaped=origin.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');return{WHOLE_DOCUMENT:true,FORBID_TAGS:['script','iframe','object','embed','form','input','button','base','meta'],FORBID_ATTR:['srcdoc'],ADD_ATTR:['epub:type'],ALLOWED_URI_REGEXP:new RegExp('^(?:blob:'+escaped+'/|(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))','i')};}

@@ -1,0 +1,45 @@
+{
+  "name": "yzc-siyuan-reading",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "author": "yzc",
+  "license": "MIT",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "package": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts tests/*.test.mjs modules/rss/tests/*.test.ts modules/reader/tests/*.test.mjs",
+    "test:browser": "node scripts/check-tree-motion.mjs && node scripts/check-unified-ui.mjs",
+    "check": "npm run typecheck && npm test && npm run build"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^22.0.0",
+    "@types/turndown": "^5.0.6",
+    "esbuild": "^0.25.0",
+    "fflate": "^0.8.3",
+    "jsdom": "^26.1.0",
+    "playwright": "1.56.1",
+    "postcss": "^8.5.29",
+    "siyuan": "^1.1.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/q924620169-cell/yzc-Siyuan-reading.git"
+  },
+  "homepage": "https://github.com/q924620169-cell/yzc-Siyuan-reading",
+  "bugs": {
+    "url": "https://github.com/q924620169-cell/yzc-Siyuan-reading/issues"
+  },
+  "description": "文档、书房与 RSS 的统一思源插件",
+  "dependencies": {
+    "@mozilla/readability": "0.6.0",
+    "@zip.js/zip.js": "2.8.23",
+    "dompurify": "3.4.17",
+    "markdown-it": "15.0.3",
+    "turndown": "7.2.0"
+  }
+}

@@ -1,0 +1,36 @@
+/* Current reference calibration supplied by the user. Typography stays independent. */
+:root:not([data-style]), :root[data-style="notion"] {
+  --notion-canvas: #ffffff;
+  --notion-sidebar: #f9f8f7;
+  --notion-text-primary: #2c2c2b;
+  --notion-selection-bg: #eeeceb;
+  --notion-selection-text: #2c2c2b;
+  --sv-shell-bg: var(--notion-sidebar);
+  --sv-pane-bg: var(--notion-sidebar);
+  --sv-tabbar-bg: var(--notion-canvas);
+  --sv-editor-bg: var(--notion-canvas);
+  --svs-canvas: var(--notion-canvas);
+  --svs-surface: var(--notion-sidebar);
+  --svs-text: var(--notion-text-primary);
+  --sv-text-strong: var(--notion-text-primary);
+  --svs-hover: #f3f2f1;
+  --svs-active: var(--notion-selection-bg);
+  --sv-resizer-color: transparent;
+  --sv-code-bg: #f9f8f7;
+  --sv-code-text: var(--notion-text-primary);
+  /* Host blocks already contribute padding and a bottom margin. Keep density
+     separate from font metrics, with independent heading before/after space. */
+  --svs-paragraph-gap: 4px;
+  --svs-heading-before: 22px;
+  --svs-heading-after: 2px;
+}
+:root:is(:not([data-style]),[data-style="notion"]) .file-tree .b3-list-item { font-weight:400; }
+:root:is(:not([data-style]),[data-style="notion"]) .file-tree .b3-list-item:hover { background: var(--svs-hover); }
+:root:is(:not([data-style]),[data-style="notion"]) .file-tree .b3-list-item:is(.b3-list-item--focus,.b3-list-item--selected,[aria-selected="true"]),
+:root:is(:not([data-style]),[data-style="notion"]) .file-tree .b3-list-item:is(.b3-list-item--focus,.b3-list-item--selected,[aria-selected="true"]):hover {
+  background: var(--notion-selection-bg) !important; color: var(--svs-tree-ink,var(--notion-selection-text)) !important; font-weight:500;
+}
+:root:is(:not([data-style]),[data-style="notion"]) .file-tree .b3-list-item:is(.b3-list-item--focus,.b3-list-item--selected,[aria-selected="true"]) > .b3-list-item__text {
+  color: var(--svs-tree-ink,var(--notion-selection-text)) !important; font-weight:500;
+}
+:root:is(:not([data-style]),[data-style="notion"]) .protyle-wysiwyg {font-weight:400;}

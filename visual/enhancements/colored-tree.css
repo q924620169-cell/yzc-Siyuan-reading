@@ -1,0 +1,5 @@
+/* Host adapter may assign semantic roles; do not color arbitrary nth-child rows. */
+:root[data-colored-tree="true"] .file-tree [data-svs-role="now"] { --svs-tree-ink: color-mix(in srgb,var(--svs-blue) 92%,black); }
+:root[data-colored-tree="true"] .file-tree [data-svs-role="library"] { --svs-tree-ink: color-mix(in srgb,var(--svs-green) 92%,black); }
+:root[data-colored-tree="true"] .file-tree [data-svs-role="inbox"] { --svs-tree-ink: color-mix(in srgb,var(--svs-orange) 92%,black); }
+:root[data-colored-tree="true"] .file-tree [data-svs-role] > .b3-list-item__text { color: var(--svs-tree-ink) !important; }

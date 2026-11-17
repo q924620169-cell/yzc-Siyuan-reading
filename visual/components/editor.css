@@ -1,0 +1,11 @@
+/* Preserve host inline width/full-width controls until tested in the target host. */
+.protyle-wysiwyg {
+  font-family: var(--svs-font-content);
+  font-size: var(--svs-body-size);
+  line-height: var(--svs-line-height);
+}
+.protyle-title { font-family: var(--svs-font-content); }
+/* Only full-width utility blocks give way when the measured editor is narrow. */
+.protyle.yzc-has-outline .protyle-wysiwyg :is([data-type="NodeCodeBlock"],[data-type="NodeTable"]) {
+  max-width:calc(100% - var(--yzc-right-utility-gutter,0px));box-sizing:border-box;
+}

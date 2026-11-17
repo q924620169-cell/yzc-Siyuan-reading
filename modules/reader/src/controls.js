@@ -1,0 +1,17 @@
+import{el,button,inheritAccent}from'./dom.js';
+let sequence=0;
+/** A transient menu stays in the dialog's top layer when used inside a modal. */
+export function popover(anchor,build,{label='菜单',className=''}={}){
+ const panel=el('div','yr-popover '+className),abort=new AbortController();inheritAccent(panel);panel.id='yr-menu-'+(++sequence);panel.setAttribute('aria-label',label);panel.setAttribute('role','menu');
+ const parent=anchor.closest('dialog')||document.body;panel.parentMenu=anchor.closest('.yr-popover');parent.append(panel);anchor.setAttribute('aria-expanded','true');anchor.setAttribute('aria-controls',panel.id);
+ const close=(restore=false)=>{abort.abort();for(const child of document.querySelectorAll('.yr-popover'))if(child.parentMenu===panel)child.closeMenu?.();panel.remove();anchor.setAttribute('aria-expanded','false');anchor.removeAttribute('aria-controls');if(restore&&anchor.isConnected)anchor.focus();};panel.closeMenu=close;
+ build(panel,close);if(className.includes('yr-dropdown-menu'))panel.style.width=Math.max(170,anchor.getBoundingClientRect().width)+'px';const place=()=>{const r=anchor.getBoundingClientRect(),p=panel.getBoundingClientRect();panel.style.left=Math.max(8,Math.min(r.left,innerWidth-p.width-8))+'px';panel.style.top=Math.max(8,Math.min(r.bottom+6,innerHeight-p.height-8))+'px';};place();
+ document.addEventListener('pointerdown',e=>{let owner=e.target.closest('.yr-popover');while(owner){if(owner===panel)return;owner=owner.parentMenu;}if(!anchor.contains(e.target))close();},{capture:true,signal:abort.signal});
+ document.addEventListener('keydown',e=>{if(e.target.closest('.yr-popover')!==panel)return;if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();close(true);}else if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();const items=[...panel.querySelectorAll('button:not(:disabled)')],i=items.indexOf(document.activeElement);items[e.key==='Home'?0:e.key==='End'?items.length-1:(i+(e.key==='ArrowUp'?-1:1)+items.length)%items.length]?.focus();}},{capture:true,signal:abort.signal});
+ window.addEventListener('resize',()=>close(),{signal:abort.signal});parent.addEventListener('close',()=>close(),{once:true,signal:abort.signal});panel.querySelector('button')?.focus();return{panel,close};
+}
+export function dropdown(label,choices,value,onChange){
+ const root=el('div','yr-dropdown'),trigger=button(label,()=>{if(menu?.panel.isConnected){menu.close();return;}menu=popover(trigger,(panel,close)=>{for(const choice of choices){const item=button(choice.label,()=>{value=choice.value;paint();onChange?.(value);close(true);});item.setAttribute('role','menuitemradio');item.setAttribute('aria-checked',String(choice.value===value));panel.append(item);}},{label,className:'yr-dropdown-menu'});});let menu;
+ trigger.setAttribute('aria-haspopup','menu');trigger.setAttribute('aria-expanded','false');const paint=()=>{trigger.replaceChildren(el('span','',choices.find(c=>c.value===value)?.label||value),el('span','yr-dropdown-chevron','⌄'));};paint();root.append(trigger);return{root,trigger,get value(){return value;}};
+}
+export function settingRow(title,description,checked){const row=el('label','yr-setting-row'),copy=el('span','yr-setting-copy'),input=el('input','yr-switch');input.type='checkbox';input.checked=checked;input.setAttribute('role','switch');input.setAttribute('aria-label',title);copy.append(el('span','yr-setting-title',title),el('small','',description));row.append(copy,input);return{row,input};}

@@ -1,0 +1,41 @@
+/* Independent of data-style. System and freely available fallback names only. */
+:root, :root[data-typography="notion"] {
+  --sv-ui-latin: Inter;
+  --sv-ui-cjk: 'PingFang SC', 'Microsoft YaHei';
+  --sv-content-latin: Inter;
+  --sv-content-cjk: 'PingFang SC', 'Microsoft YaHei';
+  --sv-mono: 'SFMono-Regular', Consolas, monospace;
+  --sv-anthropic-content-font: 'YZC Newsreader', 'Newsreader', 'YZC WenKai Screen', 'LXGW WenKai Screen', serif;
+  --svs-font-ui: Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --svs-font-content: var(--svs-font-ui);
+  --sv-heading-font: var(--svs-font-ui);
+  --svs-font-mono: 'SFMono-Regular', Consolas, monospace;
+  --svs-body-size: 16px;
+  --svs-line-height: 1.55;
+  --svs-title: 40px;
+  --svs-h1: 30px;
+  --svs-h2: 24px;
+  --svs-h3: 20px;
+}
+:root[data-typography="anthropic"] {
+  --sv-content-latin: 'YZC Newsreader', 'Newsreader';
+  --sv-content-cjk: 'YZC WenKai Screen', 'LXGW WenKai Screen';
+  --svs-font-ui: var(--sv-ui-latin), var(--sv-ui-cjk), sans-serif;
+  --svs-font-content: var(--sv-content-latin), var(--sv-content-cjk), serif;
+  --sv-heading-weight: 400;
+  --sv-heading-font: var(--sv-content-latin), 'LXGW ZhenKai GB', serif;
+  --svs-body-size: 17px;
+  --svs-line-height: 1.68;
+  --svs-title: 30px;
+  --svs-h1: 24px;
+  --svs-h2: 20px;
+  --svs-h3: 17px;
+}
+/* Original upstream ZhenKai Regular only for headings; body remains Screen. */
+:root[data-typography="anthropic"] :is(.protyle-title,.protyle-wysiwyg) {font-synthesis:none;}
+:root[data-typography="anthropic"] .protyle-title__input {font-family:var(--sv-heading-font);font-weight:var(--sv-heading-weight);line-height:1.4;letter-spacing:.015em;}
+:root[data-typography="anthropic"] .protyle-wysiwyg [data-type="NodeHeading"][data-subtype="h1"],
+:root[data-typography="anthropic"] .protyle-wysiwyg [data-type="NodeHeading"][data-subtype="h2"],
+:root[data-typography="anthropic"] .protyle-wysiwyg [data-type="NodeHeading"][data-subtype="h3"] {font-family:var(--sv-heading-font);font-weight:var(--sv-heading-weight);line-height:1.4;letter-spacing:.015em;}
+/* No synthetic weight on lower heading levels either. */
+:root[data-typography="anthropic"] .protyle-wysiwyg [data-type="NodeHeading"]:not([data-subtype="h1"]):not([data-subtype="h2"]):not([data-subtype="h3"]) {font-family:var(--sv-heading-font);font-weight:400;}

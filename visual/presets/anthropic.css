@@ -1,0 +1,32 @@
+:root[data-style="anthropic"] {
+  --sv-shell-bg: #f0eee6;
+  --sv-pane-bg: #f0eee6;
+  --sv-pane-border: rgba(20,20,19,.10);
+  --sv-resizer-color: rgba(20,20,19,.08);
+  --sv-tabbar-bg: #faf9f5;
+  --sv-editor-bg: #faf9f5;
+  --sv-text-strong: #141413;
+  --sv-code-bg: #f0eee6;
+  --sv-code-border: rgba(20,20,19,.10);
+  --sv-code-text: #141413;
+  --sv-inline-code-bg: rgba(20,20,19,.07);
+  --sv-inline-code-text: #8f4a32;
+  --svs-canvas: #faf9f5;
+  --svs-surface: #f0eee6;
+  --svs-text: #141413;
+  --svs-secondary: rgba(20,20,19,.62);
+  --svs-border: rgba(20,20,19,.10);
+  --svs-border-soft: rgba(20,20,19,.07);
+  --svs-hover: rgba(20,20,19,.05);
+  --svs-active: rgba(20,20,19,.08);
+  --svs-accent: #c6613f;
+  --svs-radius: 4px;
+  --svs-paragraph-gap: 4px;
+  --svs-heading-before: 22px;
+  --svs-heading-after: 2px;
+}
+/* Rail owns a local primary palette; other presets keep their host behavior. */
+:root[data-style="anthropic"] #dockLeft {--b3-theme-primary:#c6613f;--b3-theme-primary-light:rgba(198,97,63,.18);--b3-theme-primary-lightest:rgba(198,97,63,.10);}
+:root[data-style="anthropic"] #dockLeft .dock__item:hover {background:rgba(198,97,63,.10);}
+:root[data-style="anthropic"] #dockLeft :is(.dock__item--active,.dock__item--activefocus),
+:root[data-style="anthropic"] #dockLeft :is(.dock__item--active,.dock__item--activefocus):is(:hover,:active,:focus-visible) {background:#c6613f !important;color:#fff !important;}

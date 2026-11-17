@@ -1,0 +1,49 @@
+.protyle-wysiwyg [data-type="NodeCodeBlock"] { font-family: var(--svs-font-mono); border-radius: var(--svs-radius); }
+.protyle-wysiwyg .code-block {
+  background: var(--sv-code-bg);
+  border: 0;
+  box-shadow: none;
+  color: var(--sv-code-text);
+}
+.protyle-wysiwyg .code-block .hljs {
+  background: var(--sv-code-bg); color: var(--sv-code-text);
+}
+.protyle-wysiwyg .code-block .protyle-action,
+.protyle-wysiwyg .code-block .protyle-action__language,
+.protyle-wysiwyg .code-block .protyle-icon {
+  background: var(--sv-code-bg); color: var(--svs-secondary);
+}
+.protyle-wysiwyg .code-block .protyle-icon:hover { background: var(--svs-hover); color: var(--sv-code-text); }
+.protyle-wysiwyg [data-type~="code"]:not([data-type="NodeCodeBlock"]) {
+  background: var(--sv-inline-code-bg); color: var(--sv-inline-code-text);
+  font-family: var(--svs-font-mono); border-radius: var(--svs-radius);
+}
+/* SiYuan draws quotes with ::before, not the block border. Keep one short rule. */
+.protyle-wysiwyg [data-type="NodeBlockquote"] {
+  position: relative;
+  border: 0 !important;
+  background: transparent !important;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0 4px 0 24px;
+  color: var(--svs-text);
+}
+.protyle-wysiwyg [data-type="NodeBlockquote"]::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border: 0;
+  border-radius: 0;
+  background: var(--svs-text) !important;
+  pointer-events: none;
+}
+.protyle-wysiwyg [data-type="NodeTable"] td,
+.protyle-wysiwyg [data-type="NodeTable"] th {
+  border: 1px solid var(--svs-border);
+  padding: 9px 12px;
+  line-height: 1.6;
+  font-weight: 400;
+}

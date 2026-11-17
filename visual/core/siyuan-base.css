@@ -1,0 +1,74 @@
+:root {
+  --b3-font-family: var(--svs-font-ui);
+  --b3-theme-background: var(--svs-canvas);
+  --b3-theme-surface: var(--svs-surface);
+  --b3-theme-on-background: var(--svs-text);
+  --b3-theme-on-surface: var(--svs-secondary);
+  --b3-border-color: var(--svs-border);
+  --b3-list-hover: var(--svs-hover);
+  --b3-list-background: var(--svs-active);
+  --b3-theme-background-light: var(--sv-pane-bg);
+  --b3-theme-surface-light: var(--sv-shell-bg);
+  --b3-theme-surface-lighter: var(--sv-pane-bg);
+  --b3-theme-on-surface-light: var(--svs-secondary);
+  --b3-border-color: var(--sv-pane-border);
+  --b3-protyle-code-background: var(--sv-code-bg);
+  --b3-protyle-inline-code-background: var(--sv-inline-code-bg);
+  --b3-protyle-inline-code-color: var(--sv-inline-code-text);
+}
+body, #layouts, .toolbar, .dock, #status, .layout__center, .layout__dockl, .layout__dockr, .layout__dockb {
+  background: var(--sv-shell-bg);
+}
+.dockPanel, .file-tree, .file-tree .block__icons, .file-tree__items {
+  background: var(--sv-pane-bg);
+}
+.layout-tab-bar, .layout-tab-bar--readonly { background: var(--sv-tabbar-bg); }
+.protyle, .protyle-content, .protyle-background, .protyle-breadcrumb { background: var(--sv-editor-bg); }
+.layout__resize { background: var(--sv-resizer-color); }
+.layout__resize:hover { background: var(--svs-accent); }
+
+/* Shared geometry: Notion and Anthropic differ only in skin and typography. */
+:root { --b3-layout-space: 0px; --b3-layout-space-margin: 0px; --sv-sidebar-surface: var(--sv-pane-bg); }
+/* Keep a usable resize hit area with zero net width, never a negative gap. */
+.layout__dockl + .layout__resize {width:6px;margin-inline:-3px;}
+:root[data-sv-sidebar-collapsed="true"] { --sv-sidebar-surface: var(--sv-editor-bg); }
+:root:is(:not([data-style]), [data-style="notion"], [data-style="anthropic"]) #dockLeft,
+:root:is(:not([data-style]), [data-style="notion"], [data-style="anthropic"]) .layout__dockl,
+:root:is(:not([data-style]), [data-style="notion"], [data-style="anthropic"]) .layout__dockl .dockPanel,
+:root:is(:not([data-style]), [data-style="notion"], [data-style="anthropic"]) .layout__dockl .file-tree {
+  background: var(--sv-sidebar-surface); border-radius: 0 !important; box-shadow: none;
+}
+:root:is(:not([data-style]), [data-style="notion"], [data-style="anthropic"]) .layout__dockl {
+  /* Keep the host's top toolbar offset; remove only the card's side gap. */
+  margin-left: 0 !important; margin-right: 0 !important; padding: 0;
+}
+:root:is(:not([data-style]), [data-style="notion"], [data-style="anthropic"]) .layout__dockl .dockPanel,
+:root:is(:not([data-style]), [data-style="notion"], [data-style="anthropic"]) .layout__center,
+:root:is(:not([data-style]), [data-style="notion"], [data-style="anthropic"]) .layout__center .layout-tab-container,
+:root:is(:not([data-style]), [data-style="notion"], [data-style="anthropic"]) .protyle { border-radius: 0 !important; margin: 0; }
+
+:root:is(:not([data-style]),[data-style="notion"],[data-style="anthropic"]) :is(#dockLeft,.layout__dockl,.layout__dockl .dockPanel,.layout__center,.layout-tab-container,.protyle) {
+  border: none !important; box-shadow:none !important; border-radius:0 !important;
+}
+:root:is(:not([data-style]),[data-style="notion"],[data-style="anthropic"]) .layout__resize { background:transparent; }
+:root:is(:not([data-style]),[data-style="notion"],[data-style="anthropic"]) .layout__resize:hover { background:var(--svs-hover); }
+
+/* The entire right-hand surface includes chrome, not just the editor rectangle. */
+:root:is(:not([data-style]),[data-style="notion"],[data-style="anthropic"]) :is(body,#layouts,.layout__center,#dockRight,.layout__dockr,.layout__dockb,.layout__dockr .dockPanel,.layout__dockb .dockPanel) {
+  background:var(--sv-editor-bg); border:0 !important; box-shadow:none !important; border-radius:0 !important;
+}
+:root:is(:not([data-style]),[data-style="notion"],[data-style="anthropic"]) :is(#toolbar,#status) {
+  background:linear-gradient(to right,var(--sv-sidebar-surface) 0 var(--sv-sidebar-edge,42px),var(--sv-editor-bg) var(--sv-sidebar-edge,42px) 100%);
+  border:0 !important; box-shadow:none !important; border-radius:0;
+}
+:root:is(:not([data-style]),[data-style="notion"],[data-style="anthropic"]) .layout__center :is(.layout-tab-bar,.layout-tab-bar--readonly) {
+  background:var(--sv-editor-bg); border:0; box-shadow:none;
+}
+:root:is(:not([data-style]),[data-style="notion"],[data-style="anthropic"]) :is(#dockRight .dock__item--active,#dockRight .dock__item--activefocus) {background:var(--svs-hover);}
+/* Floating text only: no footer surface or layout row. Content has an end inset. */
+:root:is(:not([data-style]),[data-style="notion"],[data-style="anthropic"]) #status {
+  position:absolute;left:0;right:0;bottom:0;background:transparent;pointer-events:none;
+}
+:root:is(:not([data-style]),[data-style="notion"],[data-style="anthropic"]) #status > :not([data-statusbar-entry="spacer"]) {pointer-events:auto;}
+:root:is(:not([data-style]),[data-style="notion"],[data-style="anthropic"]) #status :is(.status__counter,#statusHelp) {background:transparent;border:0;box-shadow:none;}
+.protyle-content::after {content:'';display:block;height:var(--yzc-bottom-safe-area,36px);pointer-events:none;}

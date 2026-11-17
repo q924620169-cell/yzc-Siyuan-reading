@@ -1,0 +1,5 @@
+.layout-tab-bar { background: var(--sv-tabbar-bg); font-family: var(--svs-font-ui); }
+.layout-tab-bar .item--focus { background: var(--svs-active); box-shadow: none; }
+:root:is(:not([data-style]),[data-style="notion"]) .layout__center .layout-tab-bar .item--focus {
+  background:var(--notion-selection-bg) !important; color:var(--notion-selection-text); box-shadow:none !important;
+}

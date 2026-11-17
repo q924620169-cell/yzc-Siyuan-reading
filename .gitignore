@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.local/
+validation/
+*.log
+modules/reader/vendor/foliate-js/.github/
+modules/reader/vendor/foliate-js/tests/
+modules/reader/vendor/foliate-js/rollup/
+modules/reader/vendor/foliate-js/package-lock.json
+modules/reader/vendor/foliate-js/package.json
+modules/reader/vendor/foliate-js/eslint.config.js
+modules/reader/vendor/foliate-js/rollup.config.js
+modules/reader/vendor/foliate-js/vendor/**/*.map

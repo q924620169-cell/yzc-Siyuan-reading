@@ -1,0 +1,7 @@
+/* Runtime-owned host controls: enabled plugin CSS loads before JS.
+ * Theme alone must preserve native tab navigation and tree expansion. */
+.layout__center [data-type="wnd"] > .fn__flex:has(> .layout-tab-bar):not([data-yzc-native-tabs]) {display:none !important;}
+.layout__center .protyle-scroll {display:none !important;}
+.sy__file :is(li[data-type="navigation-root"],li[data-type="navigation-file"]) > .b3-list-item__toggle {display:none !important;}
+.sy__file :is(li[data-type="navigation-root"],li[data-type="navigation-file"]) {padding-left:calc(8px + var(--yzc-tree-depth,0) * 12px) !important;}
+.sy__file li[data-type="navigation-file"] {margin-left:0;padding-left:calc(28px + var(--yzc-tree-depth,1) * 12px) !important;}

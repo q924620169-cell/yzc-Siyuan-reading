@@ -1,0 +1,2 @@
+:root[data-colored-tabs="true"] .layout-tab-bar .item--focus .item__text,
+:root[data-colored-tabs="true"] .yzc-window[data-active="true"] > [role="tab"] { color: var(--svs-blue); }

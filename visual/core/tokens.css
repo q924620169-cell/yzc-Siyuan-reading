@@ -1,0 +1,44 @@
+/* V0.1 working values from the linked design brief, not official brand tokens.
+   Namespace all tokens; no global reset in a host application. Light mode only. */
+:root {
+  --svs-font-ui: Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --sv-shell-bg: #f7f6f3;
+  --sv-pane-bg: #f7f6f3;
+  --sv-pane-border: rgba(55,53,47,.10);
+  --sv-resizer-color: rgba(55,53,47,.08);
+  --sv-tabbar-bg: #f7f6f3;
+  --sv-editor-bg: #fff;
+  --sv-text-strong: #111;
+  --sv-code-bg: #f7f6f3;
+  --sv-code-border: rgba(55,53,47,.10);
+  --sv-code-text: #37352f;
+  --sv-inline-code-bg: rgba(55,53,47,.08);
+  --sv-inline-code-text: #9b4a32;
+  --sv-heading-font: var(--svs-font-ui);
+  --svs-font-content: var(--svs-font-ui);
+  --svs-font-mono: 'SFMono-Regular', Consolas, monospace;
+  --svs-canvas: #fff;
+  --svs-surface: #f7f6f3;
+  --svs-text: #37352f;
+  --svs-secondary: rgba(55,53,47,.65);
+  --svs-border: rgba(55,53,47,.16);
+  --svs-border-soft: rgba(55,53,47,.09);
+  --svs-hover: rgba(55,53,47,.06);
+  --svs-active: rgba(55,53,47,.08);
+  --svs-accent: #526b82;
+  --svs-width: 708px;
+  --svs-body-size: 16px;
+  --svs-line-height: 1.55;
+  --svs-title: 40px;
+  --svs-h1: 30px;
+  --svs-h2: 24px;
+  --svs-h3: 20px;
+  --svs-radius: 4px;
+  --svs-paragraph-gap: 8px;
+  --svs-list-gap: 2px;
+  --svs-heading-before: 26px;
+  --svs-heading-after: 6px;
+  --svs-blue: #406f95;
+  --svs-green: #46745b;
+  --svs-orange: #a55d35;
+}

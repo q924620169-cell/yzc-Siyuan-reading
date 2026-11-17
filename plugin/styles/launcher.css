@@ -1,0 +1,17 @@
+/* Plugin lifetime, independent of the theme session; only our own controls. */
+.yzc-topbar {font:600 14px var(--svs-font-ui,sans-serif);border:1px solid var(--b3-border-color);border-radius:5px;min-width:28px;}
+.yzc-topbar[aria-pressed="true"] {background:var(--b3-theme-on-background) !important;color:var(--b3-theme-background) !important;}
+.yzc-appearance {width:274px;padding:12px 16px;box-sizing:border-box;}
+.yzc-menu-heading {color:var(--b3-theme-on-surface);font:12px var(--svs-font-ui,sans-serif);padding:12px 0 6px;}
+.yzc-choice-label {font:12px var(--svs-font-ui,sans-serif);color:var(--b3-theme-on-surface);margin:10px 0 6px;}
+.yzc-choice-row {display:flex;gap:6px;}
+.yzc-choice {flex:1;cursor:pointer;background:transparent;color:var(--b3-theme-on-background);border:1px solid var(--b3-border-color);border-radius:5px;padding:7px 5px;font:12px var(--svs-font-ui,sans-serif);}
+.yzc-choice:hover {background:var(--b3-list-hover);}
+.yzc-choice[aria-checked="true"] {background:var(--b3-list-background);border-color:var(--b3-theme-on-surface);}
+.yzc-font-preview {display:flex;flex-direction:column;align-items:center;gap:5px;}
+.yzc-ag {font-size:30px;line-height:1.15;}
+.yzc-font-notion .yzc-ag {font-family:Inter,'Microsoft YaHei',sans-serif;}
+.yzc-font-anthropic .yzc-ag {font-family:var(--sv-anthropic-content-font,Georgia,serif);}
+.yzc-menu-toggle {display:flex;justify-content:space-between;align-items:center;width:100%;border:0;background:transparent;color:var(--b3-theme-on-background);padding:8px 0;font:400 14px var(--svs-font-ui,sans-serif);cursor:pointer;}
+.yzc-menu-toggle:hover {background:var(--b3-list-hover);}
+.yzc-menu-heading:first-child {padding-top:0;}

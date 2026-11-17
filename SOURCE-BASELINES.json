@@ -1,0 +1,30 @@
+{
+  "documents": {
+    "source": "D:\\AI-Projects\\yzc-INL",
+    "main": "a03cc4dfe44c017a1405d28fbab02035130bd612",
+    "localChanges": {}
+  },
+  "reader": {
+    "source": "D:\\AI-Projects\\Siyuan-reader",
+    "main": "2b070897e36ca6d7a49875cd0e46c94c68ac98b6",
+    "localChanges": {
+      "README.md": "6e0addfd7261175b7978a2fba187c9bca12f1015444f21e2545c514ee028603b",
+      "src/index.js": "19d238512db036118f6d316cc4383b06220ecb5323a057d056f43716dc1d0314",
+      "src/shelf-view.js": "eb548eaa08a08822b074590fce48f8490023ea27f057c42a79c3efe909a86082",
+      "src/ui.js": "fb44fec5c457bea3d4a41cf71643289788aad0f74902f94b526a16b259e6fb09"
+    }
+  },
+  "rss": {
+    "source": "D:\\AI-Projects\\yzc-RSS",
+    "main": "f97224e3351c07cc5d82b6dbcbd208a51e03ff5f",
+    "localChanges": {
+      "README.md": "08c538ce8d4db2b2a1b49a174ecac0ff90319cab0c2afb439590f72c93aa4389",
+      "src/inbox.ts": "860db28832353cdaa7c3ab496de962692ea82baa49a5a538ebbdd1026380c453",
+      "src/index.ts": "e651d30dd2c4e8bf8f2e641d9eb642e4195553557724061f71bb4c71894c5bb2",
+      "src/styles.css": "d2cdb895ff700510c7f7ba8c752af54c00671df804105e2274c92f959ed2ca05",
+      "src/ui/dom.ts": "09804f314a251a6b2d2e5eff37d5f873c9f931ab8d1e0a1f2ac214ccf275cf7f",
+      "src/ui/view.ts": "d77b385de1e6d78456f6330220ca74f354a6ab107588fad5249e3edb09b7b44b",
+      "tests/core.test.ts": "f7344924793cf45fd5ffcb8372fcc5e675cb92ec75c46d7daa33275dc9b92d98"
+    }
+  }
+}

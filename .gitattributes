@@ -1,0 +1,8 @@
+* text=auto eol=lf
+*.ttf binary
+*.png binary
+*.zip binary
+
+# Keep original upstream font license notices byte-for-byte.
+visual/fonts/**/OFL.txt -text -whitespace
+modules/reader/vendor/** -whitespace

@@ -1,0 +1,25 @@
+.protyle-title__input { font-size: var(--svs-title); font-weight: 700; }
+.protyle-title__input, .protyle-wysiwyg [data-type="NodeHeading"] {
+  font-family: var(--sv-heading-font);
+  font-variant-numeric: lining-nums proportional-nums;
+  font-feature-settings: 'lnum' 1, 'pnum' 1;
+  color: var(--sv-text-strong);
+}
+.protyle-wysiwyg [data-type="NodeBlockquote"],
+.protyle-wysiwyg [data-type~="strong"], .protyle-wysiwyg strong {
+  color: var(--sv-text-strong);
+}
+.protyle-wysiwyg [data-type="NodeHeading"] {
+  margin-top: var(--svs-heading-before);
+  margin-bottom: var(--svs-heading-after);
+  font-weight: 600;
+}
+.protyle-wysiwyg [data-subtype="h1"] { font-size: var(--svs-h1); }
+.protyle-wysiwyg [data-subtype="h2"] { font-size: var(--svs-h2); }
+.protyle-wysiwyg [data-subtype="h3"] { font-size: var(--svs-h3); }
+.protyle-wysiwyg > [data-type="NodeParagraph"] + [data-type="NodeParagraph"] {
+  margin-top: var(--svs-paragraph-gap);
+}
+.protyle-wysiwyg [data-type="NodeListItem"] + [data-type="NodeListItem"] {
+  margin-top: var(--svs-list-gap);
+}

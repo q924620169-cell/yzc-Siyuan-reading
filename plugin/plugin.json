@@ -1,0 +1,33 @@
+{
+  "author": "yzc",
+  "url": "https://github.com/q924620169-cell/yzc-Siyuan-reading",
+  "version": "1.0.0",
+  "minAppVersion": "3.8.6",
+  "frontends": [
+    "desktop",
+    "browser-desktop"
+  ],
+  "readme": {
+    "default": "README.md",
+    "zh-CN": "README.zh-CN.md"
+  },
+  "keywords": [
+    "INL",
+    "Notion",
+    "Anthropic"
+  ],
+  "name": "yzc-INL",
+  "displayName": {
+    "default": "yzc阅读增强",
+    "zh-CN": "yzc阅读增强"
+  },
+  "description": {
+    "default": "Documents, library and RSS in one SiYuan plugin",
+    "zh-CN": "文档导航、书房与 RSS 一体化阅读增强"
+  },
+  "backends": [
+    "windows",
+    "darwin"
+  ],
+  "disabledInPublish": true
+}

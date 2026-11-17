@@ -1,0 +1,22 @@
+/* Unmodified upstream fonts; complete notices ship under fonts/licenses/. */
+@font-face {
+  font-family: 'YZC Newsreader';
+  src: url('../fonts/newsreader/Newsreader-VF.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'LXGW ZhenKai GB';
+  src: url('../fonts/lxgw-zhenkai/LXGWZhenKaiGB-Regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'YZC WenKai Screen';
+  src: url('../fonts/lxgw-wenkai-screen/LXGWWenKaiScreen.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}

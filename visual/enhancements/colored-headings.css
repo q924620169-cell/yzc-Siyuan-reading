@@ -1,0 +1,3 @@
+:root[data-colored-headings="true"] .protyle-wysiwyg [data-subtype="h1"] { color: color-mix(in srgb,var(--svs-blue) 92%,black); }
+:root[data-colored-headings="true"] .protyle-wysiwyg [data-subtype="h2"] { color: color-mix(in srgb,var(--svs-green) 92%,black); }
+:root[data-colored-headings="true"] .protyle-wysiwyg [data-subtype="h3"] { color: color-mix(in srgb,var(--svs-orange) 92%,black); }

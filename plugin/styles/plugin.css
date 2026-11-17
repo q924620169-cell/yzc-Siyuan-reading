@@ -1,0 +1,70 @@
+/* Only companion-owned controls belong here; visual system rules live in theme/. */
+.yzc-scope-toggle { width: auto; font-size: 10px; padding: 2px 4px; border: 0; background: transparent; color: var(--b3-theme-on-surface); }
+.yzc-scope-toggle[aria-pressed="true"] { background: var(--b3-list-hover); color: var(--b3-theme-on-background); font-weight: 700; }
+.yzc-scope-toggle:disabled { opacity: .4; cursor: default; }
+.file-tree .block__icons .yzc-scope-toggle { display: inline-flex !important; opacity: 1 !important; align-items: center; }
+.file-tree .block__icons .yzc-scope-toggle:disabled { opacity: .4 !important; }
+.yzc-scope-list:not(.fn__none) { display: flex; flex-direction: column; }
+.file-tree .yzc-role-hidden { display: none !important; }
+.yzc-section { display: flex; list-style: none; align-items: center; margin: 22px 8px 5px; }
+.yzc-section button { background: transparent; border: 0; color: var(--b3-theme-on-surface); font: 11px var(--svs-font-ui, sans-serif); padding: 4px; cursor: pointer; }
+.yzc-section button:first-child { flex: 1; text-align: left; letter-spacing: .05em; }
+.yzc-section button:hover { background: var(--b3-list-hover); border-radius: 4px; }
+.yzc-section.yzc-drop-target { outline: 1px solid var(--b3-theme-primary); border-radius: 4px; }
+.yzc-dragging { opacity: .55; }
+.yzc-create { display: grid; gap: 16px; padding: 20px; }
+.yzc-create label { display: grid; gap: 8px; }
+.yzc-create [role="status"] { font-size: 13px; }
+
+.yzc-scope-list > * { flex-shrink:0; }
+.yzc-section:first-child {margin-top:14px;}
+.yzc-section button:first-child {padding:6px 0; font-weight:400;}
+.yzc-section button {font-size:11px;}
+.yzc-scope-list[data-yzc-scope-id="root"] > ul > .yzc-inl-item {padding-left:8px;}
+.yzc-scope-list .yzc-inl-leaf > :is(.b3-list-item__icon,.b3-list-item__toggle) {display:none;}
+.yzc-scope-list:not([data-yzc-scope-id="root"]) > .yzc-section {margin-left:var(--yzc-content-inset);margin-top:8px;margin-bottom:2px;}
+.yzc-scope-list:not([data-yzc-scope-id="root"]) > .yzc-inl-item {margin-left:0; padding-left:var(--yzc-content-inset) !important;}
+.yzc-scope-list:not([data-yzc-scope-id="root"]) > .yzc-inl-item > .b3-list-item__icon {display:none;}
+.yzc-scope-list:not([data-yzc-scope-id="root"]) > .yzc-inl-leaf {padding-left:var(--yzc-content-inset) !important;}
+.yzc-scope-list:not([data-yzc-scope-id="root"]) > .yzc-crowded {margin-left:var(--yzc-content-inset);}
+/* Only a known INL scope with not-yet-read children is staged for one atomic commit. */
+.file-tree .yzc-inl-pending > * {visibility:hidden;}
+.yzc-crowded {font:400 11px var(--svs-font-ui,sans-serif); color:#b6b5b3; margin:3px 8px 0;}
+
+/* Complete Tree: one quiet guide per actual child list, without moving content. */
+.file-tree:not(.yzc-focus-tree) .yzc-child-list {position:relative;}
+.file-tree:not(.yzc-focus-tree) .yzc-child-list::before {content:'';position:absolute;left:var(--yzc-guide-inset);top:4px;bottom:4px;width:1px;background:color-mix(in srgb,var(--svs-text) 7%,transparent);pointer-events:none;}
+
+/* Focus keeps the host tree, selection and DnD intact. Only the current list paints. */
+.yzc-focus-tree .block__icons > .block__logo {display:none;}
+.yzc-focus-tree .block__icons > .block__icon:not(.yzc-scope-toggle) {display:none !important;}
+.yzc-focus-back {flex:none;width:24px;height:26px;padding:0;border:0;background:transparent;color:var(--svs-secondary);font:20px var(--svs-font-ui);cursor:pointer;}
+.yzc-focus-back:hover {background:var(--svs-hover);}
+.yzc-focus-back:disabled {opacity:.25;cursor:default;}
+.yzc-focus-title {flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 6px;font:500 14px var(--svs-font-ui);}
+.yzc-focus-crumb {flex:none;padding:0 12px 8px;color:color-mix(in srgb,var(--svs-text) 38%,transparent);font:400 11px/1.5 var(--svs-font-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.yzc-focus-tree .yzc-focus-path:not(.yzc-focus-current) > :not(.yzc-focus-path) {display:none !important;}
+.yzc-focus-tree ul.yzc-focus-path:not(.yzc-focus-current) {display:contents !important;}
+.yzc-focus-tree .yzc-focus-current:not(.file-tree__items) > ul,
+.yzc-focus-tree .yzc-focus-current.file-tree__items > ul > ul {display:none !important;}
+.yzc-focus-tree .yzc-focus-current {--yzc-content-inset:8px !important;}
+.yzc-focus-tree .yzc-focus-current > li {padding-left:8px !important;}
+.yzc-focus-tree .yzc-focus-current > .yzc-section {margin-left:8px;}
+.yzc-focus-book {width:16px;height:16px;margin-right:6px;flex:none;opacity:.7;}
+
+/* Keep plugin sections outside the native list so host reconciliation leaves them alone. */
+.file-tree .yzc-flat-scroll {min-height:0;overflow:auto;}
+.file-tree .file-tree__items.yzc-flat-tree {display:flex;flex:none;flex-direction:column;overflow:visible;}
+.yzc-flat-tree > ul[role="tree"],
+.yzc-flat-tree > ul[role="tree"] > [data-tree-animation]:not([aria-hidden="true"]) {display:contents !important;}
+.yzc-flat-tree > ul[role="tree"] > [data-tree-animation][aria-hidden="true"] {display:none !important;}
+.yzc-flat-tree > ul[role="tree"] :is([data-tree-spacer],[data-tree-loading]) {display:none !important;}
+.yzc-flat-tree > .yzc-flat-local {margin:8px 8px 2px var(--yzc-content-inset);}
+.yzc-flat-tree > .yzc-flat-hint {margin-left:var(--yzc-content-inset);}
+.yzc-flat-tree > ul[role="tree"] .yzc-inl-item[data-type="navigation-file"] {
+  padding-left:calc(28px + var(--yzc-tree-depth) * 12px) !important;
+}
+.yzc-flat-tree .yzc-inl-item[data-type="navigation-file"] > .b3-list-item__icon {display:none;}
+.yzc-focus-tree .yzc-flat-tree > ul[role="tree"] .file-tree__row {padding-left:8px !important;}
+.yzc-focus-tree .yzc-flat-tree > .yzc-flat-local {margin-left:8px;}
+.yzc-focus-tree .yzc-flat-tree > .yzc-flat-hint {margin-left:8px;}

@@ -1,0 +1,67 @@
+/* Deliberate host chrome reductions; CSS applies before plugin startup. */
+#toolbarVIP, #barCommand, #barDailyNote, #status [data-statusbar-entry="backgroundTask"] {display:none !important;}
+.sy__file li[data-type="navigation-file"] > :is(.b3-list-item__icon,.b3-list-item__graphic) {display:none !important;}
+.sy__outline .b3-list-item__graphic, .sy__outline .counter {display:none !important;}
+
+/* Native editor tabs stay in the host model, but never paint a second row.
+ * Runtime-only reductions are provided by the enabled companion stylesheet. */
+.layout__center {padding-top:0;box-sizing:border-box;min-height:0;}
+/* The host disables the center of #drag for native first-row tabs. */
+#toolbar {-webkit-app-region:drag !important;app-region:drag !important;}
+#toolbar #drag:not([data-topbar-reordering="true"]) {-webkit-app-region:drag !important;app-region:drag !important;}
+#toolbar :is(button,.toolbar__item,.toolbar__item *) {-webkit-app-region:no-drag;app-region:no-drag;}
+.layout__center .protyle-breadcrumb {display:none !important;}
+.sy__outline.yzc-outline-panel > :not(.block__icons):not(.yzc-outline-list) {display:none !important;}
+.sy__outline.yzc-outline-panel .block__icons > :not(.block__logo):not([data-type="min"]) {display:none !important;}
+.sy__file .yzc-child-count {flex:none;margin-inline:6px;color:var(--svs-secondary);font:400 11px/1.4 var(--svs-font-ui);font-variant-numeric:tabular-nums;pointer-events:none;}
+.sy__file li:has(> .yzc-child-count) > .b3-list-item__text {flex:0 1 auto;}
+.sy__file .yzc-child-count {margin-right:auto;}
+.sy__file .block__icons [data-type="min"] {display:none !important;}
+.sy__file .block__icons {min-width:0;box-sizing:border-box;}
+
+.yzc-scrollspy {position:absolute;display:flex;flex-direction:column;justify-content:center;z-index:5;right:10px;top:50%;transform:translateY(-50%);width:28px;height:calc(100% - 80px);pointer-events:none;outline:none;}
+.yzc-scrollspy-ticks {display:flex;flex-direction:column;align-items:flex-end;gap:12px;padding:14px 6px;box-sizing:border-box;max-height:100%;overflow:auto;scrollbar-width:none;pointer-events:auto;transition:opacity 160ms ease;}
+.yzc-scrollspy .yzc-heading-tick {display:block;flex:none;width:calc(16px - min(var(--yzc-heading-depth),3) * 3px);height:2px;background:var(--svs-border);border-radius:0;}
+.yzc-scrollspy .yzc-heading-tick--current {background:var(--svs-text);}
+.yzc-scrollspy-panel {position:absolute;right:0;top:50%;width:min(280px,75vw);max-height:100%;box-sizing:border-box;overflow:auto;overscroll-behavior:contain;padding:10px 8px;background:var(--sv-editor-bg);border:1px solid var(--svs-border-soft);border-radius:10px;box-shadow:0 4px 18px #0000000a;scrollbar-width:thin;opacity:0;visibility:hidden;transform:translate(6px,-50%);pointer-events:none;transition:opacity 160ms ease,transform 160ms cubic-bezier(.2,.7,.3,1),visibility 0s linear 160ms;}
+.yzc-scrollspy:is(:hover,:focus-visible,:has(:focus-visible)) .yzc-scrollspy-panel {opacity:1;visibility:visible;transform:translate(0,-50%);pointer-events:auto;transition-delay:0s;}
+.yzc-scrollspy:is(:hover,:focus-visible,:has(:focus-visible)) .yzc-scrollspy-ticks {opacity:0;}
+.yzc-scrollspy button,.yzc-outline-list button {display:flex;align-items:center;width:100%;border:0;box-sizing:border-box;background:transparent;color:var(--svs-secondary);font:400 13px/1.45 var(--svs-font-ui);text-align:left;cursor:pointer;}
+.yzc-scrollspy button {min-height:30px;padding:5px 8px 5px calc(8px + var(--yzc-heading-depth) * 12px);border-radius:4px;}
+.yzc-scrollspy .yzc-heading-label {overflow-wrap:anywhere;}
+.yzc-scrollspy button:hover,.yzc-outline-list button:hover {background:var(--svs-hover);}
+.yzc-scrollspy button[aria-current="location"],.yzc-outline-list button[aria-current="location"] {color:#337ea9;}
+.yzc-outline-list {overflow:auto;flex:1;min-height:0;padding:6px 8px 16px;}
+.yzc-outline-list button {min-height:32px;padding:6px 8px 6px calc(8px + var(--yzc-heading-depth) * 12px);border-radius:4px;overflow-wrap:anywhere;}
+.yzc-outline-list button[aria-current="location"] {background:var(--svs-hover);font-weight:500;}
+.yzc-outline-empty {padding:8px;color:var(--svs-secondary);font-size:13px;}
+@media (prefers-reduced-motion:reduce) {.yzc-scrollspy-panel,.yzc-scrollspy-ticks {transition:none;}}
+
+/* Compact navigation shares the system titlebar; the remaining #drag stays free. */
+#toolbar #drag {min-width:40px;}
+#toolbar:has(> .yzc-windows:not([hidden])) #drag {font-size:0;color:transparent;}
+.yzc-windows {display:flex;align-items:center;flex:0 1 auto;gap:0;min-width:90px;max-width:65%;height:var(--sv-toolbar-height,32px);padding:0 6px;box-sizing:border-box;background:transparent;font:400 14px var(--svs-font-ui);-webkit-app-region:drag;app-region:drag;}
+.yzc-windows[hidden] {display:none;}
+.yzc-windows {margin-left:var(--sv-window-leading,0px);}
+.yzc-window-strip {display:flex;gap:0;flex:0 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none;}
+.yzc-window-actions {display:flex;align-items:center;gap:3px;flex:none;padding:0 3px;}
+.yzc-window {display:flex;align-items:center;flex:none;width:144px;max-width:220px;height:28px;margin:0 3px;border:0;border-radius:0;box-shadow:none;background:transparent;-webkit-app-region:no-drag;app-region:no-drag;}
+.yzc-windows button {border:0;border-radius:0;box-shadow:none;background:transparent;color:var(--svs-secondary);font:400 14px/1.4 var(--svs-font-ui);cursor:pointer;height:30px;padding:4px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;-webkit-app-region:no-drag;app-region:no-drag;}
+.yzc-window[data-active="true"] > [role="tab"] {color:var(--svs-text);font-weight:500;}
+.yzc-window > [role="tab"] {flex:1;min-width:0;transition:color 160ms ease,transform 160ms ease;}
+.yzc-window:has(.yzc-window-close) > [role="tab"] {transform:translateX(11px);}
+.yzc-window:is(:hover,:focus-within) > [role="tab"] {transform:translateX(0);}
+.yzc-window .yzc-window-close {flex:0 0 22px;width:22px;padding:0;opacity:0;pointer-events:none;transition:color 160ms ease,opacity 160ms ease;}
+.yzc-window:is(:hover,:focus-within) .yzc-window-close {opacity:.65;pointer-events:auto;}
+.yzc-window .yzc-window-close:hover {opacity:1;}
+.yzc-windows :is(.yzc-window-add,.yzc-window-recent) {font-size:20px;flex:none;width:28px;min-width:28px;padding:2px 5px;transition:color 160ms ease;}
+.yzc-window-actions button {display:flex;align-items:center;justify-content:center;}
+.yzc-window-actions svg {width:14px;height:14px;fill:currentColor;flex:none;}
+.yzc-windows button:hover {color:var(--svs-text);}
+@media (prefers-reduced-motion:reduce) {.yzc-windows button {transition:none;}}
+[data-yzc-window-empty] > :not(.yzc-window-empty) {display:none !important;}
+.yzc-window-empty {box-sizing:border-box;padding:90px 12%;background:var(--sv-editor-bg);color:var(--svs-secondary);font:400 14px/1.6 var(--svs-font-ui);}
+.yzc-window-history {position:fixed;z-index:220;min-width:220px;max-width:320px;max-height:65vh;overflow:auto;padding:8px;border:1px solid var(--svs-border-soft);border-radius:8px;background:var(--sv-editor-bg);box-shadow:0 6px 24px #00000012;font:400 14px/1.5 var(--svs-font-ui);-webkit-app-region:no-drag;}
+.yzc-window-history-label {padding:6px 8px;color:var(--svs-secondary);font-size:12px;}
+.yzc-window-history button {display:block;width:100%;border:0;border-radius:4px;background:transparent;color:var(--svs-text);text-align:left;font:inherit;padding:7px 8px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.yzc-window-history button:hover {background:var(--svs-hover);}
