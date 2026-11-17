@@ -1,9 +1,13 @@
 import { fetchSyncPost, openTab, showMessage, type Plugin } from 'siyuan';
 import { SiYuanAttributeAdapter } from '../inl/inl-adapter';
 
+export class KernelError extends Error {
+  constructor(message:string,readonly code:number){super(message);}
+}
+
 export async function kernel<T>(path: string, body: Record<string, unknown>): Promise<T> {
   const result = await fetchSyncPost(path, body);
-  if (result.code !== 0) throw new Error(result.msg || 'SiYuan API failed');
+  if (result.code !== 0) throw new KernelError(result.msg || 'SiYuan API failed',result.code);
   return result.data as T;
 }
 export function attributes(): SiYuanAttributeAdapter { return new SiYuanAttributeAdapter(fetchSyncPost); }
@@ -26,7 +30,7 @@ export class DocumentApi {
       await kernel('/api/filetree/renameDoc', { ...path, title: title.trim() });
     } catch {
       // The created document must still receive its role even if renaming failed.
-      showMessage('yzc-INL：文档已创建，但标题整理失败；临时后缀已保留，可手动重命名。', 6000, 'error');
+      showMessage('yzc-Siyuan-reading：文档已创建，但标题整理失败；临时后缀已保留，可手动重命名。', 6000, 'error');
     }
     return id;
   }

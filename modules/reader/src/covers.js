@@ -21,7 +21,8 @@ export function coverLines(title,measure,width=242,limit=5){
  return lines;
 }
 export function textCover(book){
- const[background,color]=colors[parseInt(book.fingerprint?.slice(0,4)||'0',16)%colors.length];
+ const seed=parseInt(book.fingerprint?.replace(/^pdf1-/,'').slice(0,4)||'0',16);
+ const[background,color]=colors[(Number.isFinite(seed)?seed:0)%colors.length];
  const ctx=document.createElement('canvas').getContext('2d');ctx.font='500 38.2px sans-serif';
  const lines=coverLines(book.title,text=>ctx.measureText(text).width);
  ctx.font='18px sans-serif';const author=coverLines(book.author,text=>ctx.measureText(text).width,242,1)[0]||'';

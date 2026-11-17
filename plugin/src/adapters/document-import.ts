@@ -1,5 +1,5 @@
 import type {Plugin} from 'siyuan';
-import {kernel} from './document-attribute-adapter';
+import {kernel,KernelError} from './document-attribute-adapter';
 import {STATUS_ATTRIBUTE} from '../inl/inl-status';
 
 /** Shared document classification and placement service for RSS imports. */
@@ -21,8 +21,15 @@ export class DocumentImport {
     if(oldTargets.length===1)return oldTargets[0];
     const nav=await this.plugin.loadData('document-navigation.json')||{};
     if(nav.homeId){
-      const location=await kernel<{notebook:string}>('/api/filetree/getPathByID',{id:nav.homeId});
-      const home=available.find(n=>n.id===location.notebook);if(home)return home;
+      try {
+        const location=await kernel<{notebook:string}>('/api/filetree/getPathByID',{id:nav.homeId});
+        const home=available.find(n=>n.id===location?.notebook);if(home)return home;
+      } catch(error) {
+        // A stale home binding is optional placement context. Keep connection,
+        // permission and index errors visible instead of silently moving imports.
+        const missing=error instanceof KernelError&&(error.code===404||/^(?:block|document|tree)(?:\s+\[[^\]]+\])?\s+(?:not found|does not exist)\b/i.test(error.message));
+        if(!missing)throw error;
+      }
     }
     return available[0];
   }

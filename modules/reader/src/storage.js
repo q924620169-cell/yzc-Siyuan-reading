@@ -5,7 +5,7 @@ export async function api(route,body={}){const response=await fetch(route,{metho
 async function createLibraryDocument(body){for(let attempt=0;;attempt++){try{return await api('/api/filetree/createDocWithMd',body);}catch(error){if(error.reason!=='indexUnavailable'||attempt>=19)throw error;await new Promise(resolve=>setTimeout(resolve,250));}}}
 export async function putFile(path,file){const data=new FormData();data.append('path',path);data.append('isDir','false');data.append('file',file);const response=await fetch('/api/file/putFile',{method:'POST',body:data});if(response.ok===false)throw Error('思源文件写入失败（HTTP '+response.status+'）');const r=await response.json();if(r.code!==0)throw Error(r.msg||'思源文件写入失败');}
 export async function getJSON(path,fallback){const r=await fetch('/api/file/getFile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path})});if(r.status===404)return fallback;if(!r.ok)throw Error('读取阅读数据失败');const data=await r.json();if(data.code===404)return fallback;if(data.code!==undefined)throw Error(data.msg||'阅读数据读取失败');return data;}
-const root='/data/storage/petal/yzc-INL/reader';
+const root='/data/storage/petal/yzc-Siyuan-reading/reader';
 export class Library{
   books=[];config={version:1,lists:[],weread:false};queue=Promise.resolve();
   async load(){await this.initializing;this.config=await getJSON(root+'/config.json',this.config);if(this.config.avID){if(!this.config.keys?.kind||!this.config.keys?.serial||!this.config.keys?.published)await this.completeSchema();else if(this.config.schemaReady)await this.refresh();await this.migrateAll();await ensureTextCovers(this);}}

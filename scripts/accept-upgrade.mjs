@@ -9,8 +9,8 @@ const page=await context.newPage();page.on('pageerror',e=>report.errors.push(e.m
 const check=(name,value)=>{assert(value,name);report.checks.push({name,pass:true});console.log('PASS',name);};
 try{
  await page.goto('https://127.0.0.1:51480/stage/build/desktop/');
- await page.waitForFunction(()=>window.siyuan?.ws?.app?.plugins?.find(p=>p.name==='yzc-INL')?.started,{},{timeout:180000});
- await page.evaluate(()=>{window.unified=window.siyuan.ws.app.plugins.find(p=>p.name==='yzc-INL');window.reader=unified.reader;window.rss=unified.rss;});
+ await page.waitForFunction(()=>window.siyuan?.ws?.app?.plugins?.find(p=>p.name==='yzc-Siyuan-reading')?.started,{},{timeout:180000});
+ await page.evaluate(()=>{window.unified=window.siyuan.ws.app.plugins.find(p=>p.name==='yzc-Siyuan-reading');window.reader=unified.reader;window.rss=unified.rss;});
  report.version=await page.evaluate(async()=> (await (await fetch('/api/system/version',{method:'POST'})).json()).data);
  check('only unified plugin installed and active',await page.evaluate(()=>window.siyuan.ws.app.plugins.length===1&&!!reader&&!!rss));
  const oldRss=JSON.parse(await readFile('.local/upgrade-workspace/data/storage/petal/yzc-RSS/state.json','utf8'));

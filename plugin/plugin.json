@@ -1,8 +1,8 @@
 {
   "author": "yzc",
   "url": "https://github.com/q924620169-cell/yzc-Siyuan-reading",
-  "version": "1.0.0",
-  "minAppVersion": "3.8.6",
+  "version": "1.0.1",
+  "minAppVersion": "3.8.10",
   "frontends": [
     "desktop",
     "browser-desktop"
@@ -17,7 +17,7 @@
     "Notion",
     "Anthropic"
   ],
-  "name": "yzc-INL",
+  "name": "yzc-Siyuan-reading",
   "displayName": {
     "default": "yzc阅读",
     "zh-CN": "yzc阅读"

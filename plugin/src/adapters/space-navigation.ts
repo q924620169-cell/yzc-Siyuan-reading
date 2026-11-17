@@ -25,7 +25,7 @@ export class SpaceNavigation {
     for(const [id,title,icon] of [['document','文档','document'],['yzc-Reader','书房','reader'],['yzc-RSS','RSS','rss']]) {
       const button=doc.createElement('button');button.type='button';button.title=title;button.setAttribute('aria-label',title);
       button.dataset.space=id;
-      const image=doc.createElement('span');image.className='yzc-space-icon';image.style.setProperty('--yzc-icon',`url('/plugins/yzc-INL/assets/space-${icon}.svg')`);image.setAttribute('aria-hidden','true');
+      const image=doc.createElement('span');image.className='yzc-space-icon';image.style.setProperty('--yzc-icon',`url('/plugins/yzc-Siyuan-reading/assets/space-${icon}.svg')`);image.setAttribute('aria-hidden','true');
       if(id==='document'){image.classList.add('yzc-native-space-icon');image.innerHTML='<svg aria-hidden="true"><use href="#iconFiles"></use></svg>';}
       const label=doc.createElement('span');label.className='yzc-space-label';
       const clip=doc.createElement('span');clip.className='yzc-space-label-clip';

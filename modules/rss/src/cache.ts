@@ -7,7 +7,7 @@ export function evictions(entries:Record<string,CacheEntry>,limit:number,now=Dat
   for(const [key,item] of Object.entries(entries).sort((a,b)=>a[1].used-b[1].used))if(bytes>limit||now-item.used>30*86400_000){out.push(key);bytes-=item.bytes;}
   return out;
 }
-const ROOT='/data/storage/petal/yzc-INL/rss/images/';
+const ROOT='/data/storage/petal/yzc-Siyuan-reading/rss/images/';
 interface Job {fallback:boolean;run:()=>void}
 export class ImageCache {
   private queue:Promise<unknown>=Promise.resolve();

@@ -13,7 +13,7 @@ import{pdfMethods}from'./pdf-ui.js';
 import{isPDF}from'./pdf.js';
 import{ReadingSearch}from'./reading-search.js';
 import{currentBookmark,releaseReadingView}from'./reading-ui.js';
-const engine=()=>import('/plugins/yzc-INL/reader/engine.js');
+const engine=()=>import('/plugins/yzc-Siyuan-reading/reader/engine.js');
 export class ReaderUI{
  constructor(library,openDoc){this.library=library;this.weread=new WeRead(library);this.openDoc=openDoc;this.sidebar=el('aside','yr-sidebar');this.root=el('main','yr-root');this.filter='all';this.navMode='目录';this.sort='recent';this.query='';this.generation=0;this.entryPending=true;this.typography=new Typography();this.timer=setInterval(()=>this.syncTheme(),1200);this.root.addEventListener('keydown',e=>this.key(e));this.outsideSearch=e=>{if(this.searchOpen&&!this.searchBox?.contains(e.target)&&!this.searchButton?.contains(e.target))this.toggleShelfSearch(false);};document.addEventListener('pointerdown',this.outsideSearch);this.renderSidebar();}
  attach(host){host.classList.add('yr-host');host.replaceChildren(this.root);if(!this.current&&!this.database){if(this.entryPending&&this.library.config.positionLock&&this.library.config.lastSession?.view==='book')this.root.replaceChildren(el('p','yr-loading','正在恢复阅读…'));else this.shelf();}if(this.ready)void this.enter().catch(report);}

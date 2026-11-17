@@ -7,10 +7,10 @@ page.on('response',async r=>{if(/\/api\/(notebook\/createNotebook|filetree\/crea
 const check=(name,value)=>{assert(value,name);report.checks.push({name,pass:true});console.log('PASS',name);};
 try{
  await page.goto((process.env.CLEAN_TEST_URL||'https://127.0.0.1:51481')+'/stage/build/desktop/');
- await page.evaluate(async()=>{await fetch('/api/petal/setPetalEnabled',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({packageName:'yzc-INL',enabled:true,app:'merge-clean-acceptance'})});});
+ await page.evaluate(async()=>{await fetch('/api/petal/setPetalEnabled',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({packageName:'yzc-Siyuan-reading',enabled:true,app:'merge-clean-acceptance'})});});
  await page.reload();
- await page.waitForFunction(()=>window.siyuan?.ws?.app?.plugins?.find(p=>p.name==='yzc-INL')?.started,{},{timeout:90000});
- await page.evaluate(()=>{window.p=window.siyuan.ws.app.plugins.find(p=>p.name==='yzc-INL');});
+ await page.waitForFunction(()=>window.siyuan?.ws?.app?.plugins?.find(p=>p.name==='yzc-Siyuan-reading')?.started,{},{timeout:90000});
+ await page.evaluate(()=>{window.p=window.siyuan.ws.app.plugins.find(p=>p.name==='yzc-Siyuan-reading');});
  await page.evaluate(()=>{window.acceptanceErrors=[];document.addEventListener('yr:error',e=>window.acceptanceErrors.push(String(e.detail)));});
  check('clean install has one plugin and no RSS subscriptions',await page.evaluate(()=>window.siyuan.ws.app.plugins.length===1&&p.rss.repo.state.sources.length===0));
  for(const id of ['document','yzc-Reader','yzc-RSS']){await page.locator(`[data-space="${id}"]`).click();await page.waitForTimeout(250);check('clean space '+id,await page.evaluate(id=>p.windows.activeSpace===id,id));}

@@ -87,7 +87,7 @@ export class FocusTreeAdapter {
       for(const row of current.querySelectorAll<HTMLElement>(':scope > li[data-type="navigation-file"]')) {
         if(Number(row.dataset.count)<=0)row.querySelector('.yzc-focus-book')?.remove();
         if(Number(row.dataset.count)>0 && !row.querySelector('.yzc-focus-book')) {
-          const icon=this.doc.createElement('img');icon.className='yzc-focus-book';icon.alt='';icon.src='/plugins/yzc-INL/assets/yzc-book.svg';
+          const icon=this.doc.createElement('img');icon.className='yzc-focus-book';icon.alt='';icon.src='/plugins/yzc-Siyuan-reading/assets/yzc-book.svg';
           row.querySelector('.b3-list-item__text')?.before(icon);
         }
       }

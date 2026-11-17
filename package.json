@@ -1,6 +1,6 @@
 {
   "name": "yzc-siyuan-reading",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "author": "yzc",
@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts tests/*.test.mjs modules/rss/tests/*.test.ts modules/reader/tests/*.test.mjs",
     "test:browser": "node scripts/check-tree-motion.mjs && node scripts/check-unified-ui.mjs",
-    "check": "npm run typecheck && npm test && npm run build"
+    "check": "npm run typecheck && npm test && npm run build",
+    "check:release": "node scripts/check-release.mjs"
   },
   "devDependencies": {
     "@types/jsdom": "^21.1.7",

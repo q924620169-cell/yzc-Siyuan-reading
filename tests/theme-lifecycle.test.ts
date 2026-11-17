@@ -9,10 +9,10 @@ function page() {return new JSDOM('<!doctype html><html data-light-theme="daylig
 
 test('unified plugin mounts on Default Light without a theme; host theme changes do not unmount; unload removes all resources',async()=>{
   const dom=page(),doc=dom.window.document;const listeners=new Map<string,Set<Function>>();
-  const css=doc.createElement('style');css.id='pluginsStyleyzc-INL';doc.head.append(css);
+  const css=doc.createElement('style');css.id='pluginsStyleyzc-Siyuan-reading';doc.head.append(css);
   const storage=new Map<string,unknown>();let writes=0;
   class Plugin {
-    name="yzc-INL";
+    name="yzc-Siyuan-reading";
     app={};
     eventBus={on:(key:string,fn:Function)=>{if(!listeners.has(key))listeners.set(key,new Set());listeners.get(key)!.add(fn);},off:(key:string,fn:Function)=>listeners.get(key)?.delete(fn)};
     async loadData(key:string){return storage.get(key) ?? null;}
@@ -25,7 +25,7 @@ test('unified plugin mounts on Default Light without a theme; host theme changes
   const win=dom.window;
   runInNewContext(output.outputFiles[0].text,{module:mod,exports:mod.exports,document:doc,window:win,
     Element:win.Element,HTMLElement:win.HTMLElement,AbortController:win.AbortController,MutationObserver:win.MutationObserver,
-    fetch:async(url:string,init:any)=>({ok:true,status:200,json:async()=>url.endsWith('getFile')?{from:'yzc-INL-plus',to:'yzc-INL',completed:true}:{code:0,data:JSON.parse(init.body).path==='/data/storage/petal'?[{name:'yzc-INL',isDir:true}]:[{name:'identity-migration-v1.json',isDir:false}]}}),
+    fetch:async(url:string,init:any)=>({ok:true,status:200,json:async()=>url.endsWith('getFile')?{from:'yzc-Siyuan-reading-plus',to:'yzc-Siyuan-reading',completed:true}:{code:0,data:JSON.parse(init.body).path==='/data/storage/petal'?[{name:'yzc-Siyuan-reading',isDir:true}]:[{name:'identity-migration-v1.json',isDir:false}]}}),
     ResizeObserver:class{observe(){}unobserve(){}disconnect(){}},requestAnimationFrame:win.requestAnimationFrame.bind(win),cancelAnimationFrame:win.cancelAnimationFrame.bind(win),setTimeout,clearTimeout,console,
     require:()=>({Plugin,fetchSyncPost:async()=>({code:0,data:[]}),showMessage:(error:unknown)=>errors.push(error),getAllEditor:()=>[],getAllTabs:()=>[],getActiveEditor:()=>undefined,getActiveTab:()=>undefined})});
   const plugin=new mod.exports.default();await plugin.onload();plugin.onLayoutReady();await flush();

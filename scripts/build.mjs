@@ -11,7 +11,7 @@ if(path.dirname(out)!==path.resolve('dist'))throw Error('Unexpected build output
 await rm(out,{recursive:true,force:true});await mkdir(out,{recursive:true});
 await build({entryPoints:['plugin/src/index.ts'],bundle:true,platform:'browser',format:'cjs',target:'chrome120',external:['siyuan','/plugins/*'],outfile:out+'/index.js',footer:{js:'module.exports = module.exports.default;'}});
 await build({entryPoints:['modules/reader/src/engine.js'],outdir:out+'/reader',bundle:true,splitting:true,format:'esm',platform:'browser',target:'chrome120',minify:true,plugins:[{name:'chromium-book-sandbox',setup(b){b.onLoad({filter:/paginator\.js$/},async args=>{let contents=rendererCompat(await readFile(args.path,'utf8'));for(const[from,to]of[["'allow-same-origin allow-scripts'","'allow-same-origin'"],['    render() {\n        if (!this.#view) return','    render() {\n        if (!this.#view?.document?.body) return'],['    #afterScroll(reason) {\n','    #afterScroll(reason) {\n        if (!this.#view?.document?.body) return\n']]){if(!contents.includes(from))throw Error('Pinned paginator compatibility patch changed');contents=contents.replace(from,to);}return{contents,loader:'js'};});}}]});
-await build({entryPoints:['visual/index.css'],bundle:true,outfile:out+'/index.css',loader:{'.ttf':'file'},assetNames:'fonts/[name]',publicPath:'/plugins/yzc-INL'});
+await build({entryPoints:['visual/index.css'],bundle:true,outfile:out+'/index.css',loader:{'.ttf':'file'},assetNames:'fonts/[name]',publicPath:'/plugins/yzc-Siyuan-reading'});
 const css=[await readFile(out+'/index.css','utf8')];
 for(const file of ['plugin.css','host-navigation.css','launcher.css','spaces.css'])css.push(await readFile('plugin/styles/'+file,'utf8'));
 // Reader and RSS already scope their UI rules; keep native PDF host selectors intact.
@@ -32,8 +32,10 @@ async function collect(dir,prefix=''){for(const e of await readdir(dir,{withFile
 await collect(out);
 for(const f of ['index.js','index.css','icon.png','reader/engine.js','fonts/Newsreader-VF.ttf','fonts/LXGWWenKaiScreen.ttf','fonts/LXGWZhenKaiGB-Regular.ttf','assets/rss/later-filled-anthropic.svg'])if(!files[f])throw Error('Missing asset: '+f);
 const runtime=new TextDecoder().decode(files['index.js'])+new TextDecoder().decode(files['index.css']);
-if(/\/plugins\/yzc-(Reader|RSS)\//.test(runtime))throw Error('Legacy plugin asset dependency');
-if(manifest.name!=='yzc-INL')throw Error('Identity must stay yzc-INL');
+if(/\/plugins\/yzc-(INL|Reader|RSS)\//.test(runtime))throw Error('Legacy plugin asset dependency');
+if(manifest.name!=='yzc-Siyuan-reading')throw Error('Marketplace identity must match the repository');
+if(manifest.displayName['zh-CN']!=='yzc阅读')throw Error('Wrong display name');
+if(!Buffer.from(files['icon.png']).equals(await readFile('plugin/icon.png')))throw Error('Wordmark differs from the supplied icon');
 const zip=zipSync(files,{level:6,mtime:new Date('2020-01-01T00:00:00Z')}),unpacked=unzipSync(zip);
 for(const [name,bytes]of Object.entries(files))if(!Buffer.from(bytes).equals(Buffer.from(unpacked[name])))throw Error('ZIP mismatch: '+name);
 await writeFile('dist/package.zip',zip);await writeFile('dist/package.sha256',createHash('sha256').update(zip).digest('hex')+'  package.zip\n');

@@ -2,7 +2,7 @@ import postcss from 'postcss';
 
 // SiYuan inserts this static stylesheet before running the plugin. Its own DOM
 // presence scopes first-paint visuals without waiting for an async JS attribute.
-export const THEME_GATE = ':where(html:has(#pluginsStyleyzc-INL))';
+export const THEME_GATE = ':where(html:has(#pluginsStyleyzc-Siyuan-reading))';
 export const PLUGIN_GATE = THEME_GATE;
 
 /** Prefix parsed selectors, preserving specificity and all font/keyframe syntax. */

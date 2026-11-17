@@ -7,7 +7,7 @@ export function button(text:string,click:()=>void,className='rss-button'):HTMLBu
 export function iconButton(label:string,asset:string,click:()=>void,withLabel=false):HTMLButtonElement{
   const node=button('',click,withLabel?'rss-action':'rss-icon-button');
   node.title=label;node.setAttribute('aria-label',label);
-  const img=el('span','rss-icon');img.setAttribute('aria-hidden','true');img.dataset.asset=asset;img.style.setProperty('--rss-icon-url',`url("/plugins/yzc-INL/assets/rss/${asset}.svg")`);node.append(img);
+  const img=el('span','rss-icon');img.setAttribute('aria-hidden','true');img.dataset.asset=asset;img.style.setProperty('--rss-icon-url',`url("/plugins/yzc-Siyuan-reading/assets/rss/${asset}.svg")`);node.append(img);
   if(withLabel)node.append(el('span','',label));return node;
 }
 /** Use SiYuan's public icon sprite, shared with the book plugin. */

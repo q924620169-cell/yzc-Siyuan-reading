@@ -141,7 +141,7 @@
 .rss-icon[data-asset=settings] {width:20px;height:20px;}
 .rss-icon[data-asset^=later] {width:14px;height:17px;}
 .rss-nav-icon .rss-icon[data-asset=later-nav] {width:14px;height:17px;}
-:root[data-style=anthropic] .rss-icon[data-asset=later-filled] {mask-image:url('/plugins/yzc-INL/assets/rss/later-filled-anthropic.svg');}
+:root[data-style=anthropic] .rss-icon[data-asset=later-filled] {mask-image:url('/plugins/yzc-Siyuan-reading/assets/rss/later-filled-anthropic.svg');}
 .rss-inbox .rss-icon {color:var(--b3-theme-on-surface);}
 .rss-inbox[aria-pressed=true] .rss-icon {color:var(--rss-accent);}
 .rss-cover {display:block;}

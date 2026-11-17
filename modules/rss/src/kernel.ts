@@ -40,7 +40,7 @@ export async function removeFile(api:Kernel,path:string):Promise<void>{
 export function pluginDataIO(signal:AbortSignal):DataIO{
   const path=(name:string)=>{
     if(!/^[a-zA-Z0-9_.-]+$/.test(name))throw new Error('非法数据文件名');
-    return `/data/storage/petal/yzc-INL/rss/${name}`;
+    return `/data/storage/petal/yzc-Siyuan-reading/rss/${name}`;
   };
   return{
     load:async name=>{

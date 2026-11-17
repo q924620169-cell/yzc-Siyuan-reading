@@ -15,7 +15,7 @@ test('cover lines wrap CJK, words and continuous text within five lines',()=>{
 test('cover migration retries safely and preserves real or replaced covers',async()=>{
  const oldDocument=global.document;
  global.document={createElement:()=>({getContext:()=>({font:'',measureText:text=>({width:text.length*20})})})};
- const library={books:[{id:'one',title:'Old',cover:'assets/yzc-reader/books/one/cover/generated-cover-v2.svg'},{id:'two',title:'Real',cover:'assets/yzc-reader/books/two/cover/cover.jpg'},{id:'three',title:'PDF'}],writes:[],
+ const library={books:[{id:'one',title:'Old',cover:'assets/yzc-reader/books/one/cover/generated-cover-v2.svg'},{id:'two',title:'Real',cover:'assets/yzc-reader/books/two/cover/cover.jpg'},{id:'three',title:'PDF',fingerprint:'pdf1-abcdef123456'}],writes:[],
   async persist(_file,id,name){return'assets/yzc-reader/books/'+id+'/cover/'+name+'.svg';},
   async update(book,patch){this.writes.push(book.id);Object.assign(book,patch);},
  };

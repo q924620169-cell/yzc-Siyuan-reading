@@ -1,5 +1,4 @@
 import { Plugin, showMessage } from 'siyuan';
-import { migratePluginStorage } from './adapters/storage-migration';
 import { normalizeSettings, type Settings } from './settings';
 import { applyPreset } from './style/preset-manager';
 import { applyEnhancements } from './enhancements/enhancement-manager';
@@ -58,11 +57,11 @@ export default class YZCPlugin extends Plugin {
   private windowSaveQueue: Promise<void> = Promise.resolve();
   private stylesheet?: HTMLElement;
   private previousPlugin: string | null = null;
-  private report = (error: unknown): void => { if (!this.disposed) showMessage(`yzc-INL：${error instanceof Error ? error.message : String(error)}`, 6000, 'error'); };
+  private report = (error: unknown): void => { if (!this.disposed) showMessage(`yzc阅读：${error instanceof Error ? error.message : String(error)}`, 6000, 'error'); };
   async onload(): Promise<void> {
     const languages=(window as unknown as {siyuan?:{languages?:{kernel?:Record<string,string>}}}).siyuan?.languages;
     this.toast=new SsdToastAdapter(document,languages?.kernel?.['278']);
-    try { await migratePluginStorage(this.name, this.migration.signal); await migrateModules(this.migration.signal); }
+    try { await migrateModules(this.migration.signal); }
     catch (error) {
       if (!this.disposed) { this.report(new Error(`配置迁移未完成，请检查旧配置后重新启用插件：${error instanceof Error ? error.message : String(error)}`)); this.onunload(); }
       return;
@@ -162,7 +161,7 @@ export default class YZCPlugin extends Plugin {
     document.documentElement.setAttribute('data-inl', 'false');
   }
   private unmount(): void {
-    this.stylesheet = document.getElementById('pluginsStyleyzc-INL') ?? this.stylesheet;
+    this.stylesheet = document.getElementById('pluginsStyleyzc-Siyuan-reading') ?? this.stylesheet;
     this.stylesheet?.remove();
     this.documents?.dispose();this.documents=undefined;this.spaces?.dispose();this.spaces=undefined;
     this.navigation?.dispose();this.navigation=undefined;

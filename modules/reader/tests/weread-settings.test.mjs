@@ -9,7 +9,7 @@ test('private key persists independently of the feature switch and authenticatio
  const previous=global.fetch;let stored={},requests=0;const key='wrk-settings-fixture';
  global.fetch=async(url,options)=>{
   if(url==='/api/file/getFile')return Response.json(stored);
-  if(url==='/api/file/putFile'){assert.equal(options.body.get('path'),'/data/storage/petal/yzc-INL/reader/weread-account.json');stored=JSON.parse(await options.body.get('file').text());return Response.json({code:0});}
+  if(url==='/api/file/putFile'){assert.equal(options.body.get('path'),'/data/storage/petal/yzc-Siyuan-reading/reader/weread-account.json');stored=JSON.parse(await options.body.get('file').text());return Response.json({code:0});}
   throw Error('Unexpected endpoint');
  };
  try{

@@ -163,7 +163,7 @@ export class DocumentNavigation {
         const shortcuts=this.doc.createElement('div');shortcuts.className='yzc-document-shortcuts';nav.append(shortcuts);
         for(const [id,label,icon]of [['home','主页','home'],['library','资料库','library'],['inbox','未分类','inbox']] as const) {
           const button=this.doc.createElement('button');button.type='button';button.dataset.category=id;
-          const image=this.doc.createElement('span');image.className='yzc-shortcut-icon';image.style.setProperty('--yzc-icon',`url('/plugins/yzc-INL/assets/nav-${icon}.svg')`);image.setAttribute('aria-hidden','true');
+          const image=this.doc.createElement('span');image.className='yzc-shortcut-icon';image.style.setProperty('--yzc-icon',`url('/plugins/yzc-Siyuan-reading/assets/nav-${icon}.svg')`);image.setAttribute('aria-hidden','true');
           button.append(image,this.doc.createTextNode(label));button.onclick=()=>this.select(id);shortcuts.append(button);
           if(this.preferences)off.push(reorderable(button,id,'shortcuts',this.preferences));
         }

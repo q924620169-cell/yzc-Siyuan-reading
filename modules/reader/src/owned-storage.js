@@ -1,7 +1,7 @@
 import{api,putFile,getJSON}from'./storage.js';
 import{safeAsset}from'./model.js';
 import{isPDF,verifyPDF}from'./pdf.js';
-const stateRoot='/data/storage/petal/yzc-INL/reader',assetRoot='assets/yzc-reader/books/';
+const stateRoot='/data/storage/petal/yzc-Siyuan-reading/reader',assetRoot='assets/yzc-reader/books/';
 export const isOwnedPDFAsset=path=>typeof path==='string'&&path.startsWith(assetRoot)&&isPDF(path);
 export function bookPaths(id){if(!/^\d{14}-[a-z0-9]{7}$/.test(id))throw Error('无效藏书 ID');return{assets:assetRoot+id+'/',state:stateRoot+'/books/'+id};}
 // Preserve hierarchy and original index paths; escape characters rejected by the host file API.
