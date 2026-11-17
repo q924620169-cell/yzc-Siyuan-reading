@@ -23,13 +23,14 @@ await copyFile('modules/reader/vendor/foliate-js/LICENSE',out+'/licenses/foliate
 await copyFile('modules/reader/licenses/pdfjs.txt',out+'/licenses/pdfjs.txt');
 const manifest=JSON.parse(await readFile('plugin/plugin.json','utf8'));
 await writeFile(out+'/plugin.json',JSON.stringify(manifest,null,2)+'\n');
+await copyFile('plugin/icon.png',out+'/icon.png');
 for(const file of ['README.md','README.zh-CN.md','LICENSE','FONT-NOTICES.md','SOURCE-BASELINES.json'])await writeFile(out+'/'+file,(await readFile(file,'utf8')).replaceAll('\r\n','\n'));
 const dependencies=['dompurify','@mozilla/readability','turndown','@zip.js/zip.js','markdown-it','argparse','entities','linkify-it','mdurl','punycode.js','uc.micro','fflate'];
 for(const name of dependencies){const root='node_modules/'+name;const license=(await readdir(root)).find(n=>/^licen[cs]e(?:[.-]|$)/i.test(n));if(!license)throw Error('Missing license: '+name);await copyFile(root+'/'+license,out+'/licenses/'+name.replaceAll('/','-')+'.txt');}
 const files={};
 async function collect(dir,prefix=''){for(const e of await readdir(dir,{withFileTypes:true})){const key=prefix+e.name;if(e.isDirectory())await collect(path.join(dir,e.name),key+'/');else files[key]=new Uint8Array(await readFile(path.join(dir,e.name)));}}
 await collect(out);
-for(const f of ['index.js','index.css','reader/engine.js','fonts/Newsreader-VF.ttf','fonts/LXGWWenKaiScreen.ttf','fonts/LXGWZhenKaiGB-Regular.ttf','assets/rss/later-filled-anthropic.svg'])if(!files[f])throw Error('Missing asset: '+f);
+for(const f of ['index.js','index.css','icon.png','reader/engine.js','fonts/Newsreader-VF.ttf','fonts/LXGWWenKaiScreen.ttf','fonts/LXGWZhenKaiGB-Regular.ttf','assets/rss/later-filled-anthropic.svg'])if(!files[f])throw Error('Missing asset: '+f);
 const runtime=new TextDecoder().decode(files['index.js'])+new TextDecoder().decode(files['index.css']);
 if(/\/plugins\/yzc-(Reader|RSS)\//.test(runtime))throw Error('Legacy plugin asset dependency');
 if(manifest.name!=='yzc-INL')throw Error('Identity must stay yzc-INL');
