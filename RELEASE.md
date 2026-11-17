@@ -1,8 +1,10 @@
-# yzc阅读 1.0.1 首发候选
+# yzc阅读 1.0.1 发布记录
 
 显示名：**yzc阅读**。插件 ID：`yzc-Siyuan-reading`。最低思源版本：3.8.10。唯一发布附件：`package.zip`。
 
-## Release 正文草稿
+2026-11-17 经用户确认公开仓库并发布 [v1.0.1 正式 Release](https://github.com/q924620169-cell/yzc-Siyuan-reading/releases/tag/v1.0.1)，对应源码提交 `3f0d0a09d0ab540a3a4ab3c3c282ee5e3bb2605c`。
+
+## Release 正文
 
 文档、书房和 RSS 合并为一个思源阅读插件，使用黑底白字 yzc 字标。
 
@@ -13,9 +15,11 @@
 
 升级前请备份工作空间并停用旧 `yzc-INL`、`yzc-Reader`、`yzc-RSS`。安装后只启用新「yzc阅读」。详细步骤见 README。Windows 思源 3.8.10 已验收；macOS 尚未实机验收。
 
-## 集市 PR 草稿
+## 集市 PR
 
 标题：`Add plugin: yzc阅读`
+
+已提交：[siyuan-note/bazaar#2541](https://github.com/siyuan-note/bazaar/pull/2541)，目标为官方 `main`，仅新增一个插件。
 
 在根目录 `plugins.txt` 添加：
 
@@ -25,11 +29,11 @@ q924620169-cell/yzc-Siyuan-reading
 
 插件将文档导航、书房和 RSS 合并为一个入口，内部 ID 与仓库名一致。使用 MIT 许可证，并在安装包内保留运行依赖和字体授权。首次发行版本为 1.0.1，`package.zip` 根目录包含清单、入口、样式和图标。
 
-## 等待版本确认后执行
+## 发布状态
 
-1. 公开当前项目仓库。
-2. 以 `v1.0.1` 标签创建正式 GitHub Release，上传已验收且校验一致的唯一 `package.zip`。
-3. Fork/同步官方 bazaar，添加上述一行并提交首次上架 PR。
-4. 审核合并后搜索「yzc阅读」，核对字标并从集市安装验证。
+1. 当前项目仓库已公开，保留单一 `main`；三个旧仓库仍保留。
+2. `v1.0.1` 是正式 Latest Release，唯一附件为 `package.zip`。重新下载验证与本地验收包一致，SHA-256 为 `a74abc206e8d410420621fff0188c74e6f721090a465ba9d311e801e29557f4c`。
+3. 上架分支基于官方最新 `main`，PR 仅修改根目录 `plugins.txt`：增加一行、删除零行。
+4. [官方 PR Check](https://github.com/siyuan-note/bazaar/actions/runs/44102373518) 已通过，PR 已获得 `ci-passed` 标记，等待社区维护者审核合并。集市安装尚未执行；合并后应搜索「yzc阅读」、核对字标并从集市安装验证。
 
 官方依据：[插件规范与打包说明](https://github.com/siyuan-note/plugin-sample)、[集市提交说明](https://github.com/siyuan-note/bazaar/blob/main/README.zh-CN.md)。

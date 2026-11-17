@@ -34,7 +34,7 @@
 
 现行脚本为 `scripts/accept-marketplace.mjs upgrade|verify-upgrade|clean|restart-upgrade|restart-clean`，可通过 `MARKETPLACE_WORKSPACE`、`MARKETPLACE_URL` 指向相应可恢复副本。升级故障注入须使用明确可丢弃的预置损坏数据。首发记录为 `validation/marketplace-*.json`，源码及安装包审查记录为 `validation/release-audit.json`。
 
-公开仓库、正式 Release 与集市 PR 等待用户确认本次候选版本。社区审核合并后的集市安装尚未执行。
+用户已确认并公开发布 [v1.0.1](https://github.com/q924620169-cell/yzc-Siyuan-reading/releases/tag/v1.0.1)，对应已验收提交 `3f0d0a0`。公开附件重新下载后 SHA-256 与验收包一致；已提交 [集市 PR #2541](https://github.com/siyuan-note/bazaar/pull/2541)，只增加一行插件条目。[官方 PR Check](https://github.com/siyuan-note/bazaar/actions/runs/44102373518) 成功，已获得 `ci-passed` 标记，等待社区维护者审核合并。合并后的集市安装尚未执行。
 
 本地详细证据位于忽略上传的 `validation/`：`host-acceptance.json`、`clean-acceptance.json`、`restart-acceptance.json` 及截图。可复测脚本为 `scripts/accept-upgrade.mjs`、`scripts/accept-clean.mjs`、`scripts/accept-restart.mjs`；默认使用 `.local/` 下的测试副本与本机端口 51480/51481，干净测试可通过 `CLEAN_TEST_URL` 改端口。脚本只能用于可恢复测试数据，会导入测试书籍和文章。
 
