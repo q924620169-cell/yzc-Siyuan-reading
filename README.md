@@ -1,4 +1,4 @@
-# yzc阅读增强
+# yzc阅读
 
 一个思源插件，提供文档导航、书房和 RSS。内部 ID 保留 `yzc-INL`，视觉风格与字体均支持 Notion / Anthropic，笔记本计数常开。
 
@@ -12,7 +12,7 @@ npm run check
 npm run test:browser
 ```
 
-唯一安装包为 `dist/package.zip`。退出或停用旧插件，将包内文件解压到测试工作空间 `data/plugins/yzc-INL/`，重新启用「yzc阅读增强」。干净安装只需启用此插件。不要同时启用旧 Reader / RSS。
+唯一安装包为 `dist/package.zip`。退出或停用旧插件，将包内文件解压到测试工作空间 `data/plugins/yzc-INL/`，重新启用「yzc阅读」。干净安装只需启用此插件。不要同时启用旧 Reader / RSS。
 
 ## 升级与数据
 

@@ -10,7 +10,7 @@ export class TopbarAdapter {
     const button = document.createElement('button');
     button.type = 'button'; button.className = 'toolbar__item yzc-topbar';
     button.setAttribute('aria-haspopup', 'menu'); button.setAttribute('aria-expanded', 'false');
-    this.button = plugin.addTopBar({ id: 'yzc', title: 'yzc阅读增强', position: 'right', element: button }) ?? button;
+    this.button = plugin.addTopBar({ id: 'yzc', title: 'yzc阅读', position: 'right', element: button }) ?? button;
     document.addEventListener('click', this.click, {capture: true, signal: this.events.signal});
     document.addEventListener('keydown', event => { if (event.key === 'Escape') this.close(); }, {signal: this.events.signal});
     this.render();
@@ -29,10 +29,10 @@ export class TopbarAdapter {
   render(): void {
     this.button = document.getElementById(this.button.id) ?? this.button;
     const state = this.read();
-    this.button.textContent = { notion: 'N', anthropic: 'A' }[state.style];
-    const label = `${state.style[0].toUpperCase() + state.style.slice(1)}`;
-    this.button.setAttribute('aria-label', `yzc阅读增强 · ${label}`);
-    this.button.title = label;
+    const title = `yzc阅读 · ${state.style[0].toUpperCase()}${state.style.slice(1)}`;
+    this.button.style.setProperty('--yzc-launcher-icon', `url("/plugins/${encodeURIComponent(this.plugin.name)}/icon.png")`);
+    this.button.setAttribute('aria-label', title);
+    this.button.title = title;
   }
   private close(): void {
     const menu=this.menu;this.menu=undefined;

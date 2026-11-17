@@ -1,11 +1,9 @@
 /* Plugin lifetime, independent of the theme session; only our own controls. */
 .yzc-topbar {
-  font: 600 14px var(--svs-font-ui, sans-serif);
   border: 1px solid #111;
   border-radius: 5px;
   min-width: 28px;
-  background: #111 !important;
-  color: #fff !important;
+  background: #111 var(--yzc-launcher-icon) center / 30px no-repeat !important;
 }
 .yzc-appearance {width:274px;padding:12px 16px;box-sizing:border-box;}
 .yzc-menu-heading {color:var(--b3-theme-on-surface);font:12px var(--svs-font-ui,sans-serif);padding:12px 0 6px;}

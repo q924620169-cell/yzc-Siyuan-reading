@@ -19,8 +19,8 @@
   ],
   "name": "yzc-INL",
   "displayName": {
-    "default": "yzc阅读增强",
-    "zh-CN": "yzc阅读增强"
+    "default": "yzc阅读",
+    "zh-CN": "yzc阅读"
   },
   "description": {
     "default": "Documents, library and RSS in one SiYuan plugin",
