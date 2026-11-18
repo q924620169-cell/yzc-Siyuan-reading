@@ -1,6 +1,6 @@
 import type { Plugin } from 'siyuan';
 import { kernel, DocumentApi } from './document-attribute-adapter';
-import { initialStatus, isStatus, STATUS_ATTRIBUTE, INL_STATUSES, type InlStatus } from '../inl/inl-status';
+import { initialStatus, STATUS_ATTRIBUTE, type InlStatus } from '../inl/inl-status';
 import { decodeCreation } from './host-events-adapter';
 import {notebookId} from './native-tree-dom';
 import type {NavigationPreferences} from '../navigation-order';
@@ -10,28 +10,25 @@ import {FilteredNativeTree} from './filtered-native-tree';
 import {NavigationContentMotion} from './navigation-content-motion';
 import {NativeTreeExpansion} from './native-tree-expansion';
 import {NativeTreeActions} from './native-tree-actions';
+import {InboxNotebook,listNotebooks} from './inbox-notebook';
 
-interface Doc {id:string;box:string;path:string;content:string;tag:string;ial:string}
+interface Doc {id:string;box:string;path:string}
+type DocumentStatus=Exclude<InlStatus,'inbox'>;
+const BATCH_SIZE=500;
 interface StatusMenu {addItem(item:{label:string;submenu:{label:string;icon?:string;click():void}[]}):unknown}
 const quote=(s:string)=>"'"+s.replace(/'/g,"''")+"'";
 const KEY='document-navigation.json';
 
-/** One native tree, filtered by a single root-block status. Content tags stay independent. */
+/** The native tree projects document statuses and the physical Inbox notebook. */
 export class DocumentNavigation {
-  async refreshImported(id:string):Promise<void> {
-    await this.queue;
-    if(this.disposed)throw Error('文档导航已停用');
-    this.queue=this.queue.then(()=>this.scan([id]));
-    await this.queue;
-  }
   private docs=new Map<string,Doc>();
-  private categories=new Map<string,InlStatus>();
+  private categories=new Map<string,DocumentStatus>();
+  private inboxId?:string;
   private navs=new Set<HTMLElement>();
   private observer:MutationObserver;
   private selected:InlStatus='now';
   private homeSelected=false;
-  private defaultStatus:InlStatus='inbox';
-  private creationIntent?:{notebook:string;parentId?:string;status:InlStatus;expires:number};
+  private creationIntent?:{notebook:string;parentId?:string;status:DocumentStatus;expires:number};
   private menuContext?:{notebook:string;parentId?:string;siblingParentId?:string;notebookRoot?:boolean};
   private homeId='';
   private homeTask?:Promise<string>;
@@ -52,7 +49,7 @@ export class DocumentNavigation {
   private reorderOffs=new Map<HTMLElement,(()=>void)[]>();
   private expansion:NativeTreeExpansion;
   private treeActions=new NativeTreeActions();
-  constructor(private plugin:Plugin,private activate:()=>void,private report:(error:unknown)=>void,private doc:Document=document,private preferences?:NavigationPreferences) {
+  constructor(private plugin:Plugin,private activate:()=>void,private report:(error:unknown)=>void,private doc:Document=document,private preferences?:NavigationPreferences,private inbox=new InboxNotebook(plugin)) {
     this.motion=new NavigationMotion(doc);
     this.nativeTree=new FilteredNativeTree(doc);
     this.contentMotion=new NavigationContentMotion(doc);
@@ -79,7 +76,6 @@ export class DocumentNavigation {
     this.persisted=JSON.stringify(this.state);
     this.expansion.load(this.state.nowExpansion);
     this.homeId=typeof this.state.homeId==='string'?this.state.homeId:'';
-    this.defaultStatus=isStatus(this.state.defaultStatus)?this.state.defaultStatus:'inbox';
     this.migration=await this.plugin.loadData('inl-status-backup.json')||{};
     if(!await this.plugin.loadData('navigation-legacy-backup.json')) {
       await this.plugin.saveData('navigation-legacy-backup.json',{version:1,settings:await this.plugin.loadData('settings.json'),notebooks:await this.plugin.loadData('inl-notebooks.json'),windows:await this.plugin.loadData('windows.json')});
@@ -88,29 +84,32 @@ export class DocumentNavigation {
   }
   private async scan(ids?:string[]):Promise<void> {
     if(this.disposed)return;
-    // Explicit LIMIT avoids the user's search-result limit. One metadata scan at
-    // startup/structural changes; ordinary attribute changes query affected roots.
-    let offset=0;
-    if(!ids){this.docs.clear();this.categories.clear();}
-    // A new document can exist before the SQL index catches up. Incremental
-    // queries must not discard the metadata supplied by its native create event.
+    const docs=ids?this.docs:new Map<string,Doc>();
+    const categories=ids?this.categories:new Map<string,DocumentStatus>();
+    if(!ids)this.inboxId=(await this.inbox.find())?.id;
     const notebooks=await this.plugin.loadData('inl-notebooks.json')||{};
+    let offset=0;
     do {
-      const batch=await kernel<Doc[]>('/api/query/sql',{stmt:`SELECT id,box,path,content,tag,ial FROM blocks WHERE type='d' ${ids?`AND id IN (${ids.map(quote).join(',')})`:''} ORDER BY id LIMIT 1000 OFFSET ${offset}`});
+      const batch=await kernel<Doc[]>('/api/query/sql',{stmt:`SELECT id,box,path FROM blocks WHERE type='d' ${ids?`AND id IN (${ids.map(quote).join(',')})`:''} ORDER BY id LIMIT ${BATCH_SIZE} OFFSET ${offset}`});
+      const ordinaryIds=batch.filter(item=>item.box!==this.inboxId).map(item=>item.id);
+      const attrs=ordinaryIds.length?await kernel<Record<string,Record<string,string>>>('/api/attr/batchGetBlockAttrs',{ids:ordinaryIds}):{};
+      if(this.disposed)return;
       for(const item of batch) {
-        if(this.disposed)return;
-        const attrs=await kernel<Record<string,string>>('/api/attr/getBlockAttrs',{id:item.id});
-        const status=initialStatus(attrs,item.path,item.box,notebooks,this.defaultStatus);
-        await this.writeStatus(item.id,status,attrs);
-        this.docs.set(item.id,item);this.categories.set(item.id,status);
+        docs.set(item.id,item);
+        if(item.box!==this.inboxId) {
+          const status=initialStatus(attrs?.[item.id]??{},item.path,item.box,notebooks,'now');
+          categories.set(item.id,status==='library'?'library':'now');
+        }
       }
-      if(ids || batch.length<1000)break;
+      if(batch.length<BATCH_SIZE)break;
       offset+=batch.length;
     }while(!this.disposed);
+    if(this.disposed)return;
+    this.docs=docs;this.categories=categories;
     this.paint();
   }
   private save():Promise<unknown> {
-    this.state={...this.state,homeId:this.homeId,selected:this.selected,defaultStatus:this.defaultStatus};const snapshot=this.state,serialized=JSON.stringify(snapshot);
+    this.state={...this.state,homeId:this.homeId,selected:this.selected};const snapshot=this.state,serialized=JSON.stringify(snapshot);
     if(serialized===this.persisted)return Promise.resolve();
     return this.plugin.saveData(KEY,snapshot).then(()=>{this.persisted=serialized;});
   }
@@ -123,8 +122,9 @@ export class DocumentNavigation {
         if(existing.id===this.homeId)return this.homeId;
         throw Error('关联的主页暂时不可访问，已保留文档 ID，请恢复原文档后重试。');
       }
-      const {notebooks}=await kernel<{notebooks:{id:string;closed:boolean}[]}>('/api/notebook/lsNotebooks',{});
-      const notebook=notebooks.find(n=>!n.closed);if(!notebook)throw Error('请先打开一个笔记本，再建立主页。');
+      const notebooks=await listNotebooks();
+      const inbox=await this.inbox.find(notebooks);
+      const notebook=notebooks.find(n=>!n.closed&&n.id!==inbox?.id)??notebooks.find(n=>!n.closed);if(!notebook)throw Error('请先打开一个笔记本，再建立主页。');
       // Persist creation intent before the API. The stable path is idempotent if
       // the frontend closes between creation and saving the returned ID.
       const location=(this.state.homeLocation as {notebook:string;path:string})||{notebook:notebook.id,path:'/主页'};
@@ -149,6 +149,10 @@ export class DocumentNavigation {
     this.queue=this.queue.then(async()=>{
       if(this.disposed)return;
       if(selected==='home'&&revision===this.selectionRevision) {const id=await this.home();if(!this.disposed&&revision===this.selectionRevision)new DocumentApi(this.plugin).open(id);}
+      if(selected==='inbox'&&revision===this.selectionRevision) {
+        this.inboxId=(await this.inbox.ensure()).id;
+        this.paint();
+      }
       await this.save();
     }).catch(this.report);
   }
@@ -184,39 +188,43 @@ export class DocumentNavigation {
     }
     if(!this.loaded)return;
     const allowed=new Set<string>(),boxes=new Set<string>();
-    for(const [id,item]of this.docs)if(this.categories.get(id)===this.selected) {
+    if(this.selected!=='inbox')for(const [id,item]of this.docs)if(item.box!==this.inboxId&&this.categories.get(id)===this.selected) {
       boxes.add(item.box);for(const part of item.path.replace(/\.sy$/,'').split('/').filter(Boolean))allowed.add(part);
     }
     for(const row of this.doc.querySelectorAll<HTMLElement>('.sy__file li[data-type^=navigation-]')) {
-      const notebook=row.dataset.treeKey?.split('/')[0].replace('notebook:','')||row.closest<HTMLElement>('ul[data-url]')?.dataset.url;
-      const visible=row.dataset.type==='navigation-root'?boxes.has(notebook||''):allowed.has(row.dataset.nodeId||'');
+      const notebook=notebookId(row);
+      const visible=this.selected==='inbox'
+        ? !!this.inboxId&&notebook===this.inboxId
+        : (!this.inboxId||notebook!==this.inboxId)&&(row.dataset.type==='navigation-root'?boxes.has(notebook||''):allowed.has(row.dataset.nodeId||''));
       if(row.hasAttribute('data-yzc-class-hidden')===visible)row.toggleAttribute('data-yzc-class-hidden',!visible);
     }
     this.nativeTree.sync();
     this.expansion.sync(this.selected);
   }
-  private async writeStatus(id:string,status:InlStatus,attrs:Record<string,string>):Promise<void> {
+  private async writeStatus(id:string,status:DocumentStatus,attrs:Record<string,string>):Promise<void> {
     if(this.disposed||attrs[STATUS_ATTRIBUTE]===status)return;
     if(!this.migration[id]) {
       this.migration[id]={...attrs};await this.plugin.saveData('inl-status-backup.json',this.migration);
     }
     if(!this.disposed)await kernel('/api/attr/setBlockAttrs',{id,attrs:{[STATUS_ATTRIBUTE]:status}});
   }
-  private setStatus(ids:string[],status:InlStatus):void {
+  private setStatus(ids:string[],status:DocumentStatus):void {
     this.queue=this.queue.then(async()=>{
+      const attrsById=await kernel<Record<string,Record<string,string>>>('/api/attr/batchGetBlockAttrs',{ids});
       for(const id of ids) {
         if(this.disposed)return;
-        const attrs=await kernel<Record<string,string>>('/api/attr/getBlockAttrs',{id});
-        if(!this.docs.has(id)&&attrs.type!=='doc')continue;
+        const attrs=attrsById?.[id];
+        if(!attrs||(this.inboxId&&this.docs.get(id)?.box===this.inboxId)||(!this.docs.has(id)&&attrs.type!=='doc'))continue;
         await this.writeStatus(id,status,attrs);this.categories.set(id,status);
       }
       this.paint();
     }).catch(this.report);
   }
   private statusMenu(menu:StatusMenu,ids:string[]):void {
+    ids=ids.filter(id=>!this.inboxId||this.docs.get(id)?.box!==this.inboxId);
     if(!ids.length)return;
-    menu.addItem({label:'INL 状态',submenu:INL_STATUSES.map(status=>({
-      label:{now:'Now',library:'Library',inbox:'Inbox'}[status],
+    menu.addItem({label:'INL 状态',submenu:(['now','library'] as const).map(status=>({
+      label:status==='now'?'Now':'Library',
       icon:ids.every(id=>this.categories.get(id)===status)?'iconCheck':undefined,
       click:()=>this.setStatus(ids,status),
     }))});
@@ -253,7 +261,7 @@ export class DocumentNavigation {
       else if(/在[上下]方新建文档|New document (above|below)/i.test(label))context={notebook:this.menuContext.notebook,parentId:this.menuContext.siblingParentId};
       else if(this.menuContext.notebookRoot&&/^(新建文档|New document)$/i.test(label))context={notebook:this.menuContext.notebook};
     }
-    if(context?.notebook)this.creationIntent={...context,status:this.selected,expires:Date.now()+5000};
+    if(context?.notebook&&context.notebook!==this.inboxId&&this.selected!=='inbox')this.creationIntent={...context,status:this.selected,expires:Date.now()+5000};
   };
   private cancelCreation=(event:KeyboardEvent):void=>{if(event.key==='Escape'){this.creationIntent=undefined;this.menuContext=undefined;}};
   private onEvent=(event:CustomEvent):void=>{
@@ -262,27 +270,33 @@ export class DocumentNavigation {
     if(created) {
       const intent=this.creationIntent;
       const fromTree=!!intent&&intent.expires>=Date.now()&&intent.notebook===created.notebook&&intent.parentId===created.parentId;
-      const status=fromTree?intent!.status:this.defaultStatus;
       this.creationIntent=undefined;
       this.menuContext=undefined;
       this.queue=this.queue.then(async()=>{
         if(this.disposed)return;
-        const attrs=await kernel<Record<string,string>>('/api/attr/getBlockAttrs',{id:created.id});
-        if(fromTree||!isStatus(attrs[STATUS_ATTRIBUTE]))await this.writeStatus(created.id,status,attrs);
-        const actual=fromTree||!isStatus(attrs[STATUS_ATTRIBUTE])?status:attrs[STATUS_ATTRIBUTE] as InlStatus;
         const path=(event.detail.data as {path:string}).path;
-        this.docs.set(created.id,{id:created.id,box:created.notebook,path,content:attrs.title||'未命名文档',tag:'',ial:''});
-        this.categories.set(created.id,actual);this.paint();
+        this.docs.set(created.id,{id:created.id,box:created.notebook,path});
+        if(created.notebook!==this.inboxId) {
+          // Only creation explicitly requested in Library needs a status write.
+          const status=fromTree?intent.status:'now';
+          if(status==='library') {
+            const attrs=await kernel<Record<string,string>>('/api/attr/getBlockAttrs',{id:created.id});
+            await this.writeStatus(created.id,status,attrs);
+          }
+          this.categories.set(created.id,status);
+        }
+        this.paint();
       }).catch(this.report);return;
     }
     const detail=event.detail;
-    if(!['setBlockAttrs','transactions','removeDoc','moveDocs','mount','closeBox','refresh','syncMergeResult','rename'].includes(detail.cmd))return;
+    const structural=['moveDocs','mount','closeBox','createnotebook','renamenotebook','removeBox','refresh','syncMergeResult','removeDoc'].includes(detail.cmd);
+    if(!structural&&!['setBlockAttrs','transactions','rename'].includes(detail.cmd))return;
     const ids=new Set<string>();
     const walk=(value:unknown):void=>{
       if(!value||typeof value!=='object')return;
       for(const [key,v]of Object.entries(value))if(['id','rootID','rootId'].includes(key)&&typeof v==='string'&&/^\d{14}-[a-z0-9]{7}$/.test(v))ids.add(v);else if(typeof v==='object')walk(v);
     };walk(detail.data);
-    if(['moveDocs','mount','closeBox','refresh','syncMergeResult','removeDoc'].includes(detail.cmd))this.rescan=true;
+    if(structural)this.rescan=true;
     else for(const id of ids)this.dirty.add(id);
     clearTimeout(this.timer);this.timer=setTimeout(()=>{
       const affected=[...this.dirty];this.dirty.clear();const all=this.rescan;this.rescan=false;

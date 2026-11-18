@@ -25,9 +25,13 @@ export class Inbox {
       if(attrs?.['custom-yzc-rss-id']===article.id)return existing.documentId;
       throw new Error('此前导入的文档已删除或不可访问；已保留导入记录，未重复创建。');
     }
-    const targets=await bridge.rootInboxTargets();
-    const selected=this.repo.state.settings.inboxNotebook;
-    const target=bridge.importTarget?await bridge.importTarget(existing?.notebook||selected):targets.find(t=>t.id===selected)||(!selected&&targets.length===1?targets[0]:undefined);
+    let target;
+    if(bridge.importTarget)target=await bridge.importTarget(existing?.notebook);
+    else {
+      const targets=await bridge.rootInboxTargets();
+      const selected=this.repo.state.settings.inboxNotebook;
+      target=targets.find(t=>t.id===selected)||(!selected&&targets.length===1?targets[0]:undefined);
+    }
     if(!target)throw new Error('请先打开一个笔记本，再转入未分类。');
     if(existing?.documentId&&existing.language!=='zh-CN')throw new Error('发现此前未完成的旧版导入文档，未自动覆盖其内容。请先核对该文档。');
     const body=await this.service.read(article);
@@ -80,7 +84,7 @@ export class Inbox {
     if(verified['custom-yzc-rss-id']!==article.id)throw new Error('文档元数据核验失败，重试将继续原文档。');
     if(coverAsset&&!verified['title-img']?.includes(coverAsset))throw new Error('题头图关联核验失败，重试将继续原文档。');
     if(bridge.classifyImported)await bridge.classifyImported(id);
-    else {
+    else if(!bridge.importTarget) {
       await this.api('/api/attr/setBlockAttrs',{id,attrs:{'custom-inl-status':'inbox'}});
       const classified=await this.api<Record<string,string>>('/api/attr/getBlockAttrs',{id});
       if(classified['custom-inl-status']!=='inbox')throw Error('未分类状态核验失败，请重试。');

@@ -4,20 +4,24 @@ import {buildSync} from 'esbuild';
 import {runInNewContext} from 'node:vm';
 import {JSDOM} from 'jsdom';
 
-const A='20261114000000-aaaaaaa',B='20261114000000-bbbbbbb',HOME='20261114000000-homeabc';
+const A='20261114000000-aaaaaaa',B='20261114000000-bbbbbbb',HOME='20261114000000-homeabc',C='20261114000000-ccccccc',D='20261114000000-ddddddd';
 const settle=()=>new Promise(r=>setTimeout(r,30));
 const compiled=buildSync({entryPoints:['plugin/src/adapters/document-navigation.ts'],bundle:true,platform:'node',format:'cjs',external:['siyuan'],write:false}).outputFiles[0].text;
 function fixture(config:Record<string,unknown>={}) {
- const dom=new JSDOM(`<div class="sy__file"><div class="file-tree__items"><ul><li data-type="navigation-root" data-tree-key="notebook:box" aria-expanded="true"></li><li data-type="navigation-file" data-node-id="${A}" data-tree-key="notebook:box/${A}"><span data-type="new" class="b3-list-item__action">+</span></li><li data-type="navigation-file" data-node-id="${B}" data-tree-key="notebook:box/${A}/${B}"></li></ul></div></div>`);
- const attrs=new Map<string,Record<string,string>>([[A,{id:A,type:'doc',tags:'资料库,未分类,工作','custom-inl-status':'now'}],[B,{id:B,type:'doc',tags:'个人','custom-inl-status':'library'}]]);
- const docs=[{id:A,box:'box',path:`/${A}.sy`,content:'parent'},{id:B,box:'box',path:`/${A}/${B}.sy`,content:'child'}];
+ const dom=new JSDOM(`<div class="sy__file"><div class="file-tree__items"><ul><li data-type="navigation-root" data-tree-key="notebook:box" aria-expanded="true"></li><li data-type="navigation-file" data-node-id="${A}" data-tree-key="notebook:box/${A}"><span data-type="new" class="b3-list-item__action">+</span></li><li data-type="navigation-file" data-node-id="${B}" data-tree-key="notebook:box/${A}/${B}"></li><li data-type="navigation-root" data-tree-key="notebook:inbox" aria-expanded="false"></li><li data-type="navigation-file" data-node-id="${C}" data-tree-key="notebook:inbox/${C}"></li></ul></div></div>`);
+ const attrs=new Map<string,Record<string,string>>([[A,{id:A,type:'doc',tags:'资料库,未分类,工作','custom-inl-status':'now'}],[B,{id:B,type:'doc',tags:'个人','custom-inl-status':'library'}],[C,{id:C,type:'doc',tags:'工作','custom-inl-status':'library'}]]);
+ const docs=[{id:A,box:'box',path:`/${A}.sy`,content:'parent'},{id:B,box:'box',path:`/${A}/${B}.sy`,content:'child'},{id:C,box:'inbox',path:`/${C}.sy`,content:'inbox note'}];
  const data=new Map<string,any>([['document-navigation.json',config]]),events=new Map<string,Function>(),requests:any[]=[],opens:string[]=[];
  const plugin={loadData:async(k:string)=>data.get(k),saveData:async(k:string,v:unknown)=>{requests.push({save:k});data.set(k,JSON.parse(JSON.stringify(v)));},eventBus:{on:(k:string,f:Function)=>events.set(k,f),off:(k:string)=>events.delete(k)},app:{}};
  const request=async(path:string,body:any)=>{requests.push({path,body});let result:any;
-  if(path.endsWith('/sql'))result=docs.filter(d=>!body.stmt.includes('AND id IN')||body.stmt.includes(d.id));
+  if(path.endsWith('/sql')){
+    const [,limit,offset]=body.stmt.match(/LIMIT (\d+) OFFSET (\d+)/);
+    result=docs.filter(d=>!body.stmt.includes('AND id IN')||body.stmt.includes(d.id)).slice(Number(offset),Number(limit)+Number(offset));
+  }
+  else if(path.endsWith('batchGetBlockAttrs'))result=Object.fromEntries(body.ids.flatMap((id:string)=>attrs.has(id)?[[id,attrs.get(id)]]:[]));
   else if(path.endsWith('getBlockAttrs'))result={...attrs.get(body.id)};
   else if(path.endsWith('setBlockAttrs')){attrs.set(body.id,{...attrs.get(body.id),...body.attrs});result=null;}
-  else if(path.endsWith('lsNotebooks'))result={notebooks:[{id:'box',closed:false}]};
+  else if(path.endsWith('lsNotebooks'))result={notebooks:[{id:'box',name:'文档',closed:false},{id:'inbox',name:'未分类',closed:false}]};
   else if(path.endsWith('getIDsByHPath'))result=[];
   else if(path.endsWith('createDocWithMd')){attrs.set(HOME,{id:HOME,type:'doc'});result=HOME;}
   return{code:0,data:result};
@@ -36,10 +40,10 @@ test('default is Now; all statuses reuse native rows and retain required ancesto
  assert.equal(f.dom.window.document.querySelector('[data-category=now]')!.textContent,'我的文档');
  assert.equal(f.dom.window.document.querySelectorAll('.yzc-document-back').length,0);
  assert.equal(f.dom.window.document.querySelector('[data-category=now]')!.hasAttribute('data-filtered'),false);
- assert.equal(f.hidden(A),false);assert.equal(f.hidden(B),true);
+ assert.equal(f.hidden(A),false);assert.equal(f.hidden(B),true);assert.equal(f.hidden(C),true);
  f.click('library');await settle();assert.equal(f.hidden(A),false);assert.equal(f.hidden(B),false);
  const back=f.dom.window.document.querySelector('[data-category=now]') as HTMLElement;assert.equal(back.hasAttribute('data-filtered'),true);back.click();await settle();assert.equal(f.hidden(B),true);assert.equal(back.hasAttribute('data-filtered'),false);
- f.click('inbox');await settle();assert.equal(f.hidden(A),true);assert.equal(f.hidden(B),true);
+ f.click('inbox');await settle();assert.equal(f.hidden(A),true);assert.equal(f.hidden(B),true);assert.equal(f.hidden(C),false);
  f.click('now');await settle();assert.equal(f.hidden(A),false);assert.equal(f.hidden(B),true);
  f.click('library');f.click('inbox');f.click('now');await settle();
  assert.equal(f.dom.window.document.querySelector('[data-category=now]')!.getAttribute('aria-current'),'page');
@@ -49,7 +53,7 @@ test('default is Now; all statuses reuse native rows and retain required ancesto
 test('document menu changes only root internal status, preserves tags/roles/paths and keeps editor open',async()=>{
  const f=fixture();await settle();const menu:any[]=[];
  f.events.get('open-menu-doctree')!({detail:{type:'doc',items:[{id:B}],menu:{addItem:(item:any)=>menu.push(item)}}});
- assert.equal(menu[0].label,'INL 状态');menu[0].submenu.find((s:any)=>s.label==='Now').click();await settle();
+ assert.equal(menu[0].label,'INL 状态');assert.deepEqual(Array.from(menu[0].submenu,(s:any)=>s.label),['Now','Library']);menu[0].submenu.find((s:any)=>s.label==='Now').click();await settle();
  assert.equal(f.attrs.get(B)!['custom-inl-status'],'now');assert.equal(f.attrs.get(B)!.tags,'个人');
  assert.equal(f.docs[1].path,`/${A}/${B}.sy`);assert.equal(f.hidden(B),false);assert.equal(f.opens.length,0);
  const write=f.requests.find(r=>r.path?.endsWith('setBlockAttrs'));assert.deepEqual(Object.keys(write.body.attrs),['custom-inl-status']);
@@ -61,24 +65,24 @@ test('native content tag changes cannot change a document status or clean user t
  assert.equal(f.attrs.get(A)!.tags,'未分类,资料库,复盘');assert.equal(f.hidden(A),false);
  assert.equal(f.requests.filter(r=>r.path?.endsWith('setBlockAttrs')).length,0);f.close();
 });
-test('ordinary creation defaults to Inbox while tree creation uses the clicked view, not the later view',async()=>{
+test('ordinary creation leaves attributes alone and explicit Library creation uses the original view',async()=>{
  const f=fixture();await settle();f.click('library');await settle();
  f.attrs.set(B,{id:B,type:'doc',tags:'工作'});
  f.events.get('ws-main')!({detail:{cmd:'create',data:{id:B,box:'box',path:`/${A}/${B}.sy`}}});await settle();
- assert.equal(f.attrs.get(B)!['custom-inl-status'],'inbox');
+ assert.equal(f.attrs.get(B)!['custom-inl-status'],undefined);
  (f.dom.window.document.querySelector('[data-type=new]') as HTMLElement).click();f.click('now');
  f.attrs.set(B,{id:B,type:'doc',tags:'工作','custom-inl-status':'inbox'});f.docs.splice(1,1);
  f.events.get('ws-main')!({detail:{cmd:'create',data:{id:B,box:'box',path:`/${A}/${B}.sy`}}});await settle();
  assert.equal(f.attrs.get(B)!['custom-inl-status'],'library');assert.equal(f.attrs.get(B)!.tags,'工作');
  f.click('library');await settle();assert.equal(f.hidden(B),false,'native creation metadata remains usable before SQL indexing');f.close();
 });
-test('cancelled tree creation does not contaminate a later ordinary creation; configurable default works',async()=>{
- const f=fixture({defaultStatus:'library'});await settle();
+test('cancelled Library creation and legacy defaults do not assign attributes to a new ordinary note',async()=>{
+ const f=fixture({defaultStatus:'library'});await settle();f.click('library');await settle();
  (f.dom.window.document.querySelector('[data-type=new]') as HTMLElement).click();
  f.dom.window.document.dispatchEvent(new f.dom.window.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
  f.attrs.set(B,{id:B,type:'doc'});
  f.events.get('ws-main')!({detail:{cmd:'create',data:{id:B,box:'box',path:`/${A}/${B}.sy`}}});await settle();
- assert.equal(f.attrs.get(B)!['custom-inl-status'],'library');f.close();
+ assert.equal(f.attrs.get(B)!['custom-inl-status'],undefined);f.close();
 });
 test('home stays one native document and does not turn the filtered tree into an all-documents view',async()=>{
  const f=fixture();await settle();f.click('home');f.click('home');await settle();
@@ -101,4 +105,37 @@ test('view selection is immediate; superseded Home work cannot open a late docum
  assert.equal(f.dom.window.document.querySelector('[data-category=library]')!.getAttribute('aria-current'),'page');
  f.click('home');f.click('inbox');assert.equal(f.dom.window.document.querySelector('[data-category=inbox]')!.getAttribute('aria-current'),'page');
  await settle();assert.equal(f.opens.length,0);assert.equal(f.requests.filter(r=>r.path?.endsWith('createDocWithMd')).length,0);f.close();
+});
+
+test('startup batches document reads without touching old Inbox markers or attributes in the native Inbox',async()=>{
+ const f=fixture();
+ f.attrs.get(A)!['custom-inl-status']='inbox';
+ for(let i=0;i<1000;i++) {
+   const id=String(i).padStart(14,'0')+'-testaaa';
+   f.docs.push({id,box:'box',path:`/${id}.sy`,content:''});
+ }
+ await settle();
+ const reads=f.requests.filter(r=>r.path?.endsWith('batchGetBlockAttrs')).map(r=>r.body.ids);
+ assert.equal(reads.length,3);assert.equal(reads.flat().length,1002);assert.ok(!reads.flat().includes(C));
+ assert.equal(f.requests.filter(r=>r.path?.endsWith('/getBlockAttrs')||r.path?.endsWith('/setBlockAttrs')).length,0);
+ assert.equal(f.attrs.get(A)!['custom-inl-status'],'inbox');assert.equal(f.hidden(A),false);
+ f.click('inbox');await settle();assert.equal(f.hidden(A),true);assert.equal(f.hidden(C),false);
+ f.close();
+});
+test('native Inbox shows a new child before indexing and only follows its actual notebook on move',async()=>{
+ const f=fixture();await settle();f.click('inbox');await settle();
+ const tree=f.dom.window.document.querySelector('.file-tree__items ul')!;
+ tree.insertAdjacentHTML('beforeend',`<li data-type="navigation-file" data-node-id="${D}" data-tree-key="notebook:inbox/${C}/${D}"></li>`);
+ f.events.get('ws-main')!({detail:{cmd:'create',data:{id:D,box:'inbox',path:`/${C}/${D}.sy`}}});
+ await settle();assert.equal(f.hidden(D),false);assert.equal(f.attrs.has(D),false);
+ const menu:any[]=[];
+ f.events.get('open-menu-doctree')!({detail:{type:'doc',items:[{id:D}],menu:{addItem:(item:any)=>menu.push(item)}}});
+ assert.equal(menu.length,0);
+ tree.querySelector<HTMLElement>(`[data-node-id="${D}"]`)!.dataset.treeKey=`notebook:box/${A}/${D}`;
+ f.docs.push({id:D,box:'box',path:`/${A}/${D}.sy`,content:'moved child'});
+ f.events.get('ws-main')!({detail:{cmd:'moveDocs',data:{}}});
+ await new Promise(r=>setTimeout(r,230));assert.equal(f.hidden(D),true);
+ f.click('now');await settle();assert.equal(f.hidden(D),false);
+ assert.equal(f.requests.filter(r=>r.path?.endsWith('/setBlockAttrs')).length,0);
+ f.close();
 });

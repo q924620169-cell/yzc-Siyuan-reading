@@ -74,7 +74,7 @@ test('image LRU capacity and expiry are bounded',()=>{
   assert.deepEqual(evictions(entries,100,now),['a','b']);assert.deepEqual(evictions(entries,1000,now),['a']);assert.equal(evictions(entries,0,now).length,3);
 });
 test('Inbox creates real root document, records metadata, survives retry and prevents duplicate click',async()=>{
-  const m=memory(),repo=new Repository(m.io);await repo.load();const a=article('a');await repo.update(s=>{s.articles=[a];});
+  const m=memory(),repo=new Repository(m.io);await repo.load();const a=article('a');await repo.update(s=>{s.articles=[a];s.settings.inboxNotebook='old-preference';});
   const calls:{path:string;body:Record<string,unknown>}[]=[];let created=0;let attrs:unknown;
   const api:Kernel=async<T>(path:string,body:Record<string,unknown>):Promise<T>=>{
     calls.push({path,body});let out:unknown;
@@ -86,11 +86,11 @@ test('Inbox creates real root document, records metadata, survives retry and pre
     else if(path.endsWith('/sql'))out=[{id:'20261020120000-testaaa'}];
     return out as T;
   };
-  const bridge={version:1 as const,register:()=>()=>{},open:()=>{},close:()=>{},rootInboxTargets:async()=>[{id:'root-inbox',name:'收件'}]};
+  const bridge={version:1 as const,register:()=>()=>{},open:()=>{},close:()=>{},rootInboxTargets:async()=>{throw Error('legacy placement');},importTarget:async(preferred?:string)=>{assert.equal(preferred,undefined);return {id:'root-inbox',name:'未分类'};}};
   const service={read:async()=>({html:'<p>Summary content</p>',kind:'summary'})} as unknown as RssService;
   const inbox=new Inbox(repo,service,api,()=>bridge,undefined,async()=>({title:'中文标题',html:'<p>中文摘要</p>'}));
   const ids=await Promise.all([inbox.import(a),inbox.import(a)]);
-  assert.equal(ids[0],ids[1]);assert.equal(created,1);assert.equal(repo.state.imports.a.completed,true);
+  assert.equal(ids[0],ids[1]);assert.equal(created,1);assert.equal(repo.state.imports.a.completed,true);assert.equal((attrs as Record<string,string>)['custom-inl-status'],undefined);
   await inbox.import(a);assert.equal(created,1);assert.ok(calls.some(c=>c.path.endsWith('getBlockAttrs')));
   const md=calls.find(c=>c.path.endsWith('createDocWithMd'))!.body.markdown as string;
   assert.ok(md.startsWith('> 原文：'));assert.doesNotMatch(md,/^# /m);assert.doesNotMatch(md,/内容：/);assert.match(md,/https:\/\/news.test\/a/);

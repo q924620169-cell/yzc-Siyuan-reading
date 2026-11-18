@@ -18,6 +18,7 @@ import { SsdToastAdapter } from './adapters/ssd-toast-adapter';
 import { WindowAdapter } from './adapters/window-adapter';
 import { windowHost } from './adapters/window-host';
 import type { WindowState } from './windows/window-model';
+import { InboxNotebook } from './adapters/inbox-notebook';
 import { ToolBridge } from './adapters/tool-bridge';
 import { SpaceNavigation } from './adapters/space-navigation';
 import { DocumentNavigation } from './adapters/document-navigation';
@@ -129,8 +130,9 @@ export default class YZCPlugin extends Plugin {
     this.windows = new WindowAdapter(windowHost(this), this.windowState, state => this.saveWindows(state), this.report);
     this.navigation=new NavigationPreferences(this.navigationState,state=>this.saveData(ORDER_KEY,state),this.report);
     this.spaces = new SpaceNavigation(this.windows,document,this.navigation);
-    this.documents = new DocumentNavigation(this,()=>this.windows?.selectDocuments(),this.report,document,this.navigation);
-    this.bridge = new ToolBridge(this,this.windows,()=>this.preferences.inlEnabled,document,id=>this.documents!.refreshImported(id));
+    const inbox = new InboxNotebook(this);
+    this.documents = new DocumentNavigation(this,()=>this.windows?.selectDocuments(),this.report,document,this.navigation,inbox);
+    this.bridge = new ToolBridge(this.windows,inbox,document);
   }
   private saveWindows(state: WindowState): void {
     if (JSON.stringify(this.windowState) === JSON.stringify(state)) return;
