@@ -58,8 +58,15 @@ export class WindowAdapter {
     for(const item of host.documents()) if(item.token !== this.native?.token) host.close(item);
     this.busy=false;
     this.unsubscribe=host.subscribe(this.onHostChange);
-    this.observer=new doc.defaultView!.MutationObserver(() => this.mount());
-    this.observer.observe(doc.body,{childList:true,subtree:true});
+    this.observer=new doc.defaultView!.MutationObserver(records => {
+      if(records.some(record => {
+        if(record.type==='childList')return true;
+        const target=record.target as Element;
+        if(record.attributeName==='style')return target.hasAttribute('data-yzc-window-bar');
+        return target===doc.body||target.matches('[data-type="wnd"],.layout-tab-bar [data-type="tab-header"]');
+      }))this.mount();
+    });
+    this.observer.observe(doc.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
     doc.addEventListener('click',this.onClick,{capture:true,signal:this.events.signal});
     doc.addEventListener('keydown',this.onKey,{signal:this.events.signal});
     this.strip.addEventListener('pointerdown',this.onPointerDown,{signal:this.events.signal});
@@ -75,21 +82,38 @@ export class WindowAdapter {
   private mount(): void {
     if(this.disposed) return;
     const wnd=this.doc.querySelector('.layout__center .layout__wnd--active') ?? this.doc.querySelector('.layout__center [data-type="wnd"]');
-    // One persistent titlebar container; editor replacement never remounts it.
     const container=wnd?.querySelector<HTMLElement>(':scope > .layout-tab-container');
+    const row=wnd?.querySelector<HTMLElement>(':scope > .fn__flex:has(> .layout-tab-bar)');
+    const foreign=this.foreign();
+    const fused=this.doc.body.classList.contains('body--toolbar-hide');
+    const fusedRow=fused&&!foreign?row:undefined;
     const drag=this.doc.querySelector('#toolbar > #drag');
-    if(drag && this.nav.nextElementSibling !== drag) drag.before(this.nav);
-    for(const row of this.doc.querySelectorAll<HTMLElement>('.layout__center [data-type="wnd"] > .fn__flex:has(> .layout-tab-bar)')) {
-      this.rows.add(row);
-      const foreign=row.parentElement===wnd && this.foreign();
-      if(foreign)row.setAttribute('data-yzc-native-tabs','');
-      else row.removeAttribute('data-yzc-native-tabs');
+
+    // An overlapping toolbar owns only the system buttons in fusion mode.
+    // Use the native header's layout without replacing its tabs or drag spacer.
+    const below=!!fusedRow&&fusedRow.style.visibility==='hidden'&&!this.model.active.tool;
+    if(fusedRow) {
+      if(below) {
+        // SiYuan hides a header that cannot fit between the system buttons.
+        if(this.nav.previousElementSibling!==fusedRow)fusedRow.after(this.nav);
+      } else if(this.nav.parentElement!==fusedRow)fusedRow.prepend(this.nav);
+    } else if(drag&&this.nav.nextElementSibling!==drag)drag.before(this.nav);
+    this.nav.toggleAttribute('data-yzc-window-fallback',below);
+
+    for(const old of this.rows)if(!old.isConnected)this.rows.delete(old);
+    for(const header of this.doc.querySelectorAll<HTMLElement>('.layout__center [data-type="wnd"] > .fn__flex:has(> .layout-tab-bar)')) {
+      if(!this.rows.has(header))this.observer.observe(header,{attributes:true,attributeFilter:['style']});
+      this.rows.add(header);
+      header.toggleAttribute('data-yzc-native-tabs', header===row&&foreign);
+      header.toggleAttribute('data-yzc-window-bar', header===fusedRow);
     }
-    this.nav.hidden=this.foreign();
-    for(const old of this.doc.querySelectorAll('[data-yzc-window-empty]')) if(old !== container || this.model.active.document || this.model.active.tool) old.removeAttribute('data-yzc-window-empty');
-    if(container && !this.model.active.document && !this.model.active.tool && !this.foreign()) {
-      container.setAttribute('data-yzc-window-empty','');
-      if(this.empty.parentElement !== container) container.append(this.empty);
+    this.nav.hidden=foreign;
+
+    const emptyContainer=!this.model.active.document&&!this.model.active.tool&&!foreign?container:undefined;
+    for(const old of this.doc.querySelectorAll('[data-yzc-window-empty]'))if(old!==emptyContainer)old.removeAttribute('data-yzc-window-empty');
+    if(emptyContainer) {
+      emptyContainer.setAttribute('data-yzc-window-empty','');
+      if(this.empty.parentElement!==emptyContainer)emptyContainer.append(this.empty);
     } else this.empty.remove();
   }
   private changed(): void { if(!this.model.active.tool){this.documentKey=this.model.state.active;this.model.state.documentActive=this.documentKey;}this.save(JSON.parse(JSON.stringify(this.model.state))); this.render();this.listeners.forEach(listener=>listener()); }
@@ -271,7 +295,11 @@ export class WindowAdapter {
     this.tools.clear();this.toolVisibility.clear();
     this.listeners.clear();
     this.disposed=true;this.events.abort();this.observer.disconnect();this.unsubscribe();this.closeHistory();this.nav.remove();this.empty.remove();
-    for(const row of this.rows)row.removeAttribute('data-yzc-native-tabs');this.rows.clear();this.items.clear();
+    for(const row of this.rows) {
+      row.removeAttribute('data-yzc-native-tabs');
+      row.removeAttribute('data-yzc-window-bar');
+    }
+    this.rows.clear();this.items.clear();
     this.doc.querySelectorAll('[data-yzc-window-empty]').forEach(el=>el.removeAttribute('data-yzc-window-empty'));
   }
 }

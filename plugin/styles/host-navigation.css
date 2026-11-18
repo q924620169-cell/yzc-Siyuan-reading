@@ -1,6 +1,11 @@
-/* Runtime-owned host controls: enabled plugin CSS loads before JS.
- * Theme alone must preserve native tab navigation and tree expansion. */
-.layout__center [data-type="wnd"] > .fn__flex:has(> .layout-tab-bar):not([data-yzc-native-tabs]) {display:none !important;}
+/* Native fusion measures the header and its right-hand drag spacer. */
+body:not(.body--toolbar-hide) .layout__center [data-type="wnd"] > .fn__flex:has(> .layout-tab-bar):not([data-yzc-native-tabs]) {display:none !important;}
+.body--toolbar-hide [data-yzc-window-bar] {display:flex!important;}
+.body--toolbar-hide [data-yzc-window-bar] > .layout-tab-bar:not(.layout-tab-bar--readonly),
+.body--toolbar-hide [data-yzc-window-bar] .item--readonly > [data-type] {display:none!important;}
+.body--toolbar-hide [data-yzc-window-bar] > .yzc-windows,
+.body--toolbar-hide .yzc-windows[data-yzc-window-fallback] {margin-left:0;max-width:none;min-width:0;}
+.body--toolbar-hide .yzc-windows[data-yzc-window-fallback] {flex:none;-webkit-app-region:no-drag;app-region:no-drag;}
 .layout__center .protyle-scroll {display:none !important;}
 .sy__file :is(li[data-type="navigation-root"],li[data-type="navigation-file"]) > .b3-list-item__toggle {display:none !important;}
 .sy__file :is(li[data-type="navigation-root"],li[data-type="navigation-file"]) {padding-left:calc(8px + var(--yzc-tree-depth,0) * 12px) !important;}

@@ -3,6 +3,7 @@ import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import path from 'node:path';
 import {createRequire} from 'node:module';
 import {build} from 'esbuild';
+import assert from 'node:assert/strict';
 const require=createRequire(import.meta.url),{chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 await mkdir('validation',{recursive:true});
 const output=await build({entryPoints:['plugin/src/adapters/shell-layout-adapter.ts'],bundle:true,write:false,format:'iife',globalName:'YZCShell'});
@@ -18,7 +19,73 @@ const server=createServer(async(req,res)=>{
   try{res.setHeader('Content-Type',file.endsWith('.css')?'text/css':'font/ttf');res.end(await readFile(file));}catch{res.writeHead(404).end();}
 });await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const browser=await chromium.launch({headless:true,channel:process.env.BROWSER_CHANNEL||(process.platform==='win32'?'msedge':undefined)}),report={environment:'Chromium real layout; Default Light fixture; Windows and synthetic macOS geometry',cases:[]};
+async function checkFusion() {
+  const {outputFiles}=await build({entryPoints:['plugin/src/adapters/window-adapter.ts'],bundle:true,write:false,format:'iife',globalName:'YZCWindows'});
+  const page=await browser.newPage({viewport:{width:960,height:650}});
+  page.setDefaultTimeout(8000);
+  const base=`http://127.0.0.1:${server.address().port}`;
+  try {
+    // Reproduce SiYuan's two overlapping titlebar layers and the native drag edges.
+    await page.goto(base);
+    await page.setContent(`<!doctype html><link id="pluginsStyleyzc-Siyuan-reading" rel="stylesheet" href="${base}/index.css"><style>
+      body{margin:0}#toolbar{height:42px;width:100%;display:flex;align-items:center}
+      #toolbar>button{flex:0 0 140px;height:40px}#drag{flex:1;height:42px}
+      .body--toolbar-hide #toolbar{position:absolute;z-index:7;top:0}
+      .body--toolbar-hide #drag{position:relative;-webkit-app-region:none}
+      #drag::before,#drag::after{content:'';position:absolute;width:8px;height:42px;top:0}
+      #drag::before{left:0}#drag::after{right:0}
+      #layouts{display:flex}.layout__center{flex:1}#left-dock{width:240px}#right-dock{width:60px}
+      .native-row{display:flex;min-height:42px;box-sizing:border-box}
+      .layout-tab-bar{display:flex;list-style:none;margin:0;padding:0;align-items:center;min-width:0}
+      .layout-tab-bar--readonly{flex:1;min-width:56px;margin-right:88px}
+      .layout-tab-container{height:240px}#native-tool{height:100px}
+    </style><body class="body--toolbar-hide"><div id="toolbar"><button>Workspace</button><div id="drag"></div><button id="settings">Settings</button></div>
+    <div id="layouts"><aside id="left-dock"></aside><main class="layout__center"><div class="layout__wnd--active" data-type="wnd">
+      <div class="native-row fn__flex"><ul class="layout-tab-bar"><li data-type="tab-header"><button id="native-tab">搜索</button></li></ul><ul class="layout-tab-bar layout-tab-bar--readonly"><li class="item--readonly"><span data-type="new">+</span><span class="fn__flex-1"></span></li></ul></div>
+      <div class="layout-tab-container"><article id="native-tool">原生工具内容</article></div>
+    </div></main><aside id="right-dock"></aside></div></body>`);
+    await page.addScriptTag({content:outputFiles[0].text});
+    await page.evaluate(()=>{
+      let foreign=false;
+      const note={id:'note',title:'文档',token:'note'};
+      const host={active:()=>foreign?undefined:note,documents:()=>[note],foreign:()=>foreign,open:async()=>note,close:()=>{},subscribe:()=>()=>{}};
+      window.windowsAdapter=new YZCWindows.WindowAdapter(host,null,()=>{},error=>{throw error;});
+      window.showNative=()=>{
+        foreign=true;
+        document.querySelector('[data-type="tab-header"]').classList.add('item--focus');
+      };
+      document.querySelector('#settings').onclick=()=>{document.body.dataset.settingsClick='true';};
+      document.querySelector('#native-tab').onclick=()=>{document.body.dataset.nativeClick='true';};
+    });
+    await page.getByRole('button',{name:'Settings'}).click();
+    assert.equal(await page.locator('body').getAttribute('data-settings-click'),'true');
+    const add=page.getByRole('button',{name:'新增窗口'});
+    await add.click();
+    await page.setViewportSize({width:740,height:650});
+    await add.click();
+    await page.locator('.native-row').evaluate(row=>{row.style.visibility='hidden';});
+    await page.locator('.yzc-windows[data-yzc-window-fallback]').waitFor();
+    await add.click();
+    await page.locator('.native-row').evaluate(row=>{row.style.visibility='';});
+    await page.locator('.native-row > .yzc-windows').waitFor();
+    assert.equal(await page.locator('.native-row > .yzc-windows [role="tab"]').count(),4);
+    assert.ok(await page.locator('.yzc-window-empty').isVisible());
+    assert.equal(await page.locator('#native-tool').isVisible(),false);
+    await page.evaluate(()=>showNative());
+    await page.locator('#native-tab').click();
+    assert.equal(await page.locator('body').getAttribute('data-native-click'),'true');
+    assert.ok(await page.locator('#native-tool').isVisible());
+    assert.equal(await add.isVisible(),false);
+    assert.equal(await page.locator('.layout-tab-bar--readonly').evaluate(el=>el.parentElement.lastElementChild===el),true);
+    await page.evaluate(()=>windowsAdapter.dispose());
+    assert.ok(await page.locator('#native-tool').isVisible());
+    assert.equal(await page.locator('[data-yzc-window-bar], [data-yzc-native-tabs], [data-yzc-window-empty]').count(),0);
+    console.log('PASS fused toolbar click-through, explicit windows, native tab and panel, and cleanup');
+  } finally { await page.close(); }
+}
+
 try{
+  await checkFusion();
   const page=await browser.newPage({viewport:{width:1536,height:900}});await page.goto(`http://127.0.0.1:${server.address().port}/`);
   // Before any JS state/adapter, the static CSS already establishes the base.
   const prepaint=await page.evaluate(()=>({color:getComputedStyle(document.body).backgroundColor,native:getComputedStyle(document.querySelector('#native-row')).display,attributes:document.documentElement.hasAttribute('data-sv-theme')}));
@@ -40,7 +107,11 @@ try{
     if(bottom.code>bottom.status+.5)throw Error(name+': code end obscured by floating stats');
     report.cases.push({name,...result,bottom});await page.screenshot({path:`validation/${name}.png`});
   }
-  await page.evaluate(()=>{document.documentElement.dataset.style='anthropic';document.documentElement.dataset.typography='anthropic';document.querySelector('.protyle-content').scrollTop=0;});await page.evaluate(()=>document.fonts.ready);
+  await page.evaluate(()=>{document.documentElement.dataset.style='anthropic';document.documentElement.dataset.typography='anthropic';document.querySelector('.protyle-content').scrollTop=0;});await page.evaluate(async()=>{
+    // A ready promise captured before style changes request the font can already be resolved.
+    await document.fonts.load('30px "LXGW ZhenKai GB"','视觉文案当前版本独立阶段');
+    await document.fonts.ready;
+  });
   const fonts=await page.evaluate(()=>{const s=sel=>getComputedStyle(document.querySelector(sel));return{loaded:document.fonts.check('30px "LXGW ZhenKai GB"','视觉文案当前版本独立阶段'),heading:s('.protyle-title__input').fontFamily,lower:s('[data-subtype="h4"]').fontFamily,body:s('.protyle-wysiwyg').fontFamily,size:s('.protyle-wysiwyg').fontSize,line:s('.protyle-wysiwyg').lineHeight,weight:s('.protyle-title__input').fontWeight,synthesis:s('.protyle-wysiwyg').fontSynthesis};});
   if(!fonts.loaded||!fonts.heading.includes('ZhenKai')||!fonts.lower.includes('ZhenKai')||fonts.body.includes('ZhenKai')||fonts.size!=='17px'||fonts.weight!=='400'||fonts.synthesis!=='none')throw Error('Font separation failed '+JSON.stringify(fonts));
   await page.screenshot({path:'validation/anthropic-headings.png'});report.fonts=fonts;

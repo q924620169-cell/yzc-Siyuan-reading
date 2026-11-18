@@ -6,9 +6,14 @@
 /* Native editor tabs stay in the host model, but never paint a second row.
  * Runtime-only reductions are provided by the enabled companion stylesheet. */
 .layout__center {padding-top:0;box-sizing:border-box;min-height:0;}
-/* The host disables the center of #drag for native first-row tabs. */
-#toolbar {-webkit-app-region:drag !important;app-region:drag !important;}
-#toolbar #drag:not([data-topbar-reordering="true"]) {-webkit-app-region:drag !important;app-region:drag !important;}
+/* In fusion the native header sits under the toolbar gap; keep the gap interactive from below. */
+body:not(.body--toolbar-hide) #toolbar,
+body:not(.body--toolbar-hide) #toolbar #drag:not([data-topbar-reordering="true"]) {-webkit-app-region:drag !important;app-region:drag !important;}
+.body--toolbar-hide #toolbar {pointer-events:none;}
+.body--toolbar-hide #toolbar > :not(#drag),
+.body--toolbar-hide #toolbar #drag::before,
+.body--toolbar-hide #toolbar #drag::after {pointer-events:auto;}
+.body--toolbar-hide #toolbar > .yzc-windows {display:none;}
 #toolbar :is(button,.toolbar__item,.toolbar__item *) {-webkit-app-region:no-drag;app-region:no-drag;}
 .layout__center .protyle-breadcrumb {display:none !important;}
 .sy__outline.yzc-outline-panel > :not(.block__icons):not(.yzc-outline-list) {display:none !important;}
@@ -38,7 +43,7 @@
 @media (prefers-reduced-motion:reduce) {.yzc-scrollspy-panel,.yzc-scrollspy-ticks {transition:none;}}
 
 /* Compact navigation shares the system titlebar; the remaining #drag stays free. */
-#toolbar #drag {min-width:40px;}
+body:not(.body--toolbar-hide) #toolbar #drag {min-width:40px;}
 #toolbar:has(> .yzc-windows:not([hidden])) #drag {font-size:0;color:transparent;}
 .yzc-windows {display:flex;align-items:center;flex:0 1 auto;gap:0;min-width:90px;max-width:65%;height:var(--sv-toolbar-height,32px);padding:0 6px;box-sizing:border-box;background:transparent;font:400 14px var(--svs-font-ui);-webkit-app-region:drag;app-region:drag;}
 .yzc-windows[hidden] {display:none;}

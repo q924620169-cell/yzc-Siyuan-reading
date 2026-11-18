@@ -61,6 +61,9 @@ body, #layouts, .toolbar, .dock, #status, .layout__center, .layout__dockl, .layo
   background:linear-gradient(to right,var(--sv-sidebar-surface) 0 var(--sv-sidebar-edge,42px),var(--sv-editor-bg) var(--sv-sidebar-edge,42px) 100%);
   border:0 !important; box-shadow:none !important; border-radius:0;
 }
+:root:is(:not([data-style]),[data-style="notion"],[data-style="anthropic"]) .body--toolbar-hide #toolbar {
+  background:linear-gradient(to right,var(--sv-sidebar-surface) 0 var(--sv-sidebar-edge,42px),transparent var(--sv-sidebar-edge,42px) 100%);
+}
 :root:is(:not([data-style]),[data-style="notion"],[data-style="anthropic"]) .layout__center :is(.layout-tab-bar,.layout-tab-bar--readonly) {
   background:var(--sv-editor-bg); border:0; box-shadow:none;
 }

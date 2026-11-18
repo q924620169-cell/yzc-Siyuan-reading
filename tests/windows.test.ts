@@ -23,12 +23,17 @@ function setup() {
   let active:HostDocument={...a,token:'one'};let docs=[active,{id:'old',title:'旧浏览文档',token:'old'}];let changed=()=>{};
   const opened:string[]=[],closed:string[]=[],saved:any[]=[];
   let hold:((doc:HostDocument)=>void)|undefined;
-  const host:WindowHost={active:()=>active,documents:()=>docs,foreign:()=>false,
+  let foreign=false;
+  const host:WindowHost={active:()=>foreign?undefined:active,documents:()=>docs,foreign:()=>foreign,
     open:async id=>{opened.push(id);const next={id,title:id==='b'?'测试22':'视觉文案',token:`new-${opened.length}`};active=next;docs.push(next);changed();if(hold)await new Promise<HostDocument>(done=>hold=done);return next;},
     close:doc=>{closed.push(doc.token);docs=docs.filter(d=>d.token!==doc.token);changed();},subscribe:cb=>{changed=cb;return()=>{changed=()=>{};};}};
   const adapter=new WindowAdapter(host,null,s=>saved.push(s),e=>{throw e;},dom.window.document);
   dom.window.document.querySelector('.b3-list-item__text')!.addEventListener('click',()=>void host.open('b'));
-  return{dom,doc:dom.window.document,adapter,opened,closed,saved,changed:()=>changed(),setHold:()=>{hold=()=>{};},release:()=>hold?.(active)};
+  return{dom,doc:dom.window.document,adapter,opened,closed,saved,changed:()=>changed(),setForeign:(value:boolean)=>{
+    foreign=value;
+    const tab=dom.window.document.querySelector('.layout-tab-bar')!;
+    tab.querySelector('[data-type=tab-header]')?.classList.toggle('item--focus',value);
+  },setHold:()=>{hold=()=>{};},release:()=>hold?.(active)};
 }
 const flush=async()=>{for(let i=0;i<12;i++)await Promise.resolve();};
 
@@ -101,5 +106,62 @@ test('titlebar strip and keyed controls survive ten navigation commits and host 
   const row=doc.querySelector('.layout__wnd--active > .fn__flex')!;row.replaceWith(row.cloneNode(true));await flush();
   doc.querySelector('#drag')!.textContent='Native title update';await flush();
   assert.equal(doc.querySelector('.yzc-windows'),nav);assert.equal(doc.querySelectorAll('.yzc-windows').length,1);
+  adapter.dispose();dom.window.close();
+});
+
+test('native fusion moves the same window controls into the existing header and returns them live',async()=>{
+  const {dom,doc,adapter,opened}=setup();
+  const nav=doc.querySelector('.yzc-windows');
+  const row=doc.querySelector('.layout__wnd--active > .fn__flex')!;
+  const nativeTabs=row.firstElementChild;
+  const nativeActions=row.lastElementChild;
+  doc.body.classList.add('body--toolbar-hide');await flush();
+  assert.equal(nav?.parentElement,row);
+  assert.ok(row.hasAttribute('data-yzc-window-bar'));
+  assert.equal(row.firstElementChild?.nextElementSibling,nativeTabs);
+  assert.equal(row.lastElementChild,nativeActions);
+
+  (doc.querySelector('.b3-list-item__text') as HTMLElement).click();await flush();
+  assert.deepEqual(opened,['b']);assert.equal(adapter.model.state.slots.length,1);
+  (doc.querySelector('.yzc-window-add') as HTMLElement).click();
+  assert.equal(adapter.model.state.slots.length,2);
+  (doc.querySelector('.yzc-window-recent') as HTMLElement).click();
+  (doc.querySelector('[role="menuitem"]') as HTMLElement).click();await flush();
+  assert.ok(adapter.model.active.document);assert.equal(adapter.model.state.slots.length,2);
+
+  doc.body.classList.remove('body--toolbar-hide');await flush();
+  assert.equal(nav?.nextElementSibling,doc.querySelector('#drag'));
+  assert.equal(row.hasAttribute('data-yzc-window-bar'),false);
+  assert.equal(row.firstElementChild,nativeTabs);
+  doc.body.classList.add('body--toolbar-hide');await flush();
+  adapter.dispose();
+  assert.equal(row.querySelector('.yzc-windows'),null);
+  assert.equal(row.hasAttribute('data-yzc-window-bar'),false);
+  assert.equal(row.lastElementChild,nativeActions);
+  dom.window.close();
+});
+
+test('switching to an existing native tool shows its header and content even from an empty window',async()=>{
+  const {dom,doc,adapter,setForeign}=setup();
+  const row=doc.querySelector('.layout__wnd--active > .fn__flex')!;
+  row.querySelector('.layout-tab-bar')!.innerHTML='<li data-type="tab-header" data-id="search"></li>';
+  const container=doc.querySelector('.layout-tab-container')!;
+  const nav=doc.querySelector<HTMLElement>('.yzc-windows')!;
+  doc.body.classList.add('body--toolbar-hide');await flush();
+  (nav.querySelector('.yzc-window-add') as HTMLElement).click();
+  assert.equal(container.hasAttribute('data-yzc-window-empty'),true);
+  setForeign(true);await flush();
+  assert.equal(nav.hidden,true);
+  assert.ok(row.hasAttribute('data-yzc-native-tabs'));
+  assert.equal(row.hasAttribute('data-yzc-window-bar'),false);
+  assert.equal(container.hasAttribute('data-yzc-window-empty'),false);
+  assert.equal(container.querySelector('.yzc-window-empty'),null);
+  assert.equal(container.querySelector('.protyle')?.textContent,'Native editor');
+
+  setForeign(false);await flush();
+  assert.equal(nav.hidden,false);
+  assert.equal(nav.parentElement,row);
+  assert.equal(container.hasAttribute('data-yzc-window-empty'),true);
+  assert.equal(adapter.model.state.slots.length,2);
   adapter.dispose();dom.window.close();
 });
