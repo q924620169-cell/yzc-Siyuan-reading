@@ -1,5 +1,5 @@
-/* Dock nodes are hidden, never removed. Removing this stylesheet restores them. */
-:root[data-yzc-spaces] #dockLeft {display:none!important;width:0!important;min-width:0!important;}
+/* The space switch owns the Reader and RSS entry points. Keep their Dock models for the panels. */
+:root[data-yzc-spaces] .dock__item:is([data-type="yzc-Siyuan-readingreading"],[data-type="yzc-Siyuan-readingrss-navigation"]) {display:none!important;}
 :root[data-yzc-spaces] .layout__dockl {display:flex;flex-direction:column;min-width:240px;}
 :root[data-yzc-spaces] .layout__dockl [data-type=wnd]>.fn__flex:has(>.layout-tab-bar) {display:none!important;}
 /* Shared navigation inset: 12px outside + 10px within each row. */

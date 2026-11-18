@@ -17,6 +17,7 @@ export class SpaceNavigation {
   private active?:string;
   private pending?:{id:string;direction:number;attempts:number};
   private revealFrame=0;
+  private dockBarInitialized = false;
   private reorderOffs:(()=>void)[]=[];
   constructor(private windows: WindowAdapter, private doc: Document = document,private preferences?:NavigationPreferences) {
     this.motion=new NavigationMotion(doc);
@@ -42,8 +43,7 @@ export class SpaceNavigation {
     this.observer=new doc.defaultView!.MutationObserver(()=>this.mount());
     this.observer.observe(doc.body,{subtree:true,childList:true});
     doc.documentElement.setAttribute('data-yzc-spaces','');this.render();
-    // The activity rail is replaced by this switch, so a restored collapsed
-    // sidebar needs one native activation to keep the spaces reachable.
+    // Keep the sidebar panel reachable even when the native icon rail is collapsed.
     const dock=doc.querySelector<HTMLElement>('.layout__dockl');
     if(dock && (dock.classList.contains('fn__none')||dock.getBoundingClientRect().width<1)) {
       // Some hosts persist a selected model with width=0. Select the document
@@ -57,7 +57,18 @@ export class SpaceNavigation {
   private mount(): void {
     const dock=this.doc.querySelector('.layout__dockl');
     if(dock && this.nav.parentElement!==dock)dock.prepend(this.nav);
+    this.collapseDockBarOnStartup();
     this.scheduleReveal();
+  }
+  private collapseDockBarOnStartup(): void {
+    if (this.dockBarInitialized) return;
+    const toggle = this.doc.querySelector<HTMLElement>('#status #barDock:not(.fn__none)');
+    const icon = toggle?.querySelector('use');
+    const href = icon?.getAttribute('xlink:href') ?? icon?.getAttribute('href');
+    if (!toggle || (href !== '#iconDock' && href !== '#iconHideDock')) return;
+    this.dockBarInitialized = true;
+    // The native button also synchronizes layout and tooltip. Leave later toggles to SiYuan.
+    if (href === '#iconHideDock') toggle.click();
   }
   private scheduleReveal():void{
     if(!this.pending||this.revealFrame)return;
