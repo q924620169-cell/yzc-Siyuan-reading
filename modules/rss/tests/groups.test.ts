@@ -1,4 +1,30 @@
-import './environment';import test from'node:test';import assert from'node:assert/strict';import{Repository}from'../src/storage';import{initialState,sourceGroups,setSourceGroups,sourceIdsFor,filterArticles}from'../src/model';import{renameTaxonomy,taggedArticles}from'../src/ui/settings-manage';import{RssService}from'../src/service';import{RemoteClient}from'../src/kernel';
+import './environment';import test from'node:test';import assert from'node:assert/strict';import{Repository}from'../src/storage';import{initialState,sourceGroups,setSourceGroups,sourceIdsFor,filterArticles}from'../src/model';import{renameTaxonomy,taggedArticles}from'../src/ui/settings-manage';import{RssService}from'../src/service';import{RemoteClient}from'../src/kernel';import{RssView}from'../src/ui/view';import{iconButton,hostIconButton,rssIcon}from'../src/ui/dom';
+test('RSS icons are inline geometry and never depend on remote masks or host sprite uses',()=>{
+  const action=iconButton('稍后看','later',()=>{},true),refresh=hostIconButton('刷新订阅','iconRefresh',()=>{});
+  for(const node of [action,refresh,rssIcon('document')]){const icon=node.matches('svg.rss-icon')?node:node.querySelector('svg.rss-icon')!;
+    assert.ok(icon.querySelector('path,circle'),'inline geometry must render without an asset request');
+    assert.equal(icon.querySelector('use'),null);assert.equal(icon.style.getPropertyValue('--rss-icon-url'),'');
+  }
+  assert.equal(action.querySelector('.rss-icon')?.getAttribute('data-asset'),'later');
+  assert.equal(refresh.querySelector('.rss-icon')?.getAttribute('data-asset'),'iconRefresh');
+});
+test('RSS source groups use document-tree rows with book and document icons',async()=>{
+  const x=memory();await x.repo.load();
+  await x.repo.update(s=>{s.groups=['个人成长'];s.sources=[
+    {id:'dan',title:'Dan Koe — Future/Proof',url:'https://x.test/dan',type:'rss',group:'个人成长',groups:['个人成长'],tags:[]},
+    {id:'derek',title:'Derek Sivers — Articles',url:'https://x.test/derek',type:'rss',group:'个人成长',groups:['个人成长'],tags:[]}
+  ];});
+  const view=new RssView({repo:x.repo,service:{subscribeRefresh:()=>()=>{}} as any,cache:{} as any,inbox:{} as any,bridge:()=>undefined,message:()=>{},reschedule:()=>{}});
+  const group=view.sidebar.querySelector('.rss-tree-group')!,row=group.closest('.rss-group-row')!;
+  assert.equal(group.querySelector('.rss-tree-label')?.textContent,'个人成长');
+  assert.equal(group.querySelector('.rss-tree-count')?.textContent,'2');
+  assert.equal(group.querySelector('.rss-tree-book .rss-icon')?.getAttribute('data-asset'),'book');
+  assert.equal(row.querySelector('.rss-group-toggle .rss-icon')?.getAttribute('data-asset'),'chevron');
+  assert.equal(row.querySelector('.rss-group-toggle')?.getAttribute('aria-expanded'),'true');
+  assert.equal(view.sidebar.querySelectorAll('.rss-tree-source .rss-tree-document .rss-icon').length,2);
+  assert.equal(view.sidebar.querySelectorAll('.rss-icon use').length,0);
+  assert.equal(view.sidebar.querySelectorAll('.rss-icon[style*="--rss-icon-url"]').length,0);
+});
 function memory(){const files=new Map<string,any>();let fail=false;const repo=new Repository({load:async k=>structuredClone(files.get(k)),save:async(k,v)=>{if(fail&&k==='state.json')throw Error('Disk');files.set(k,structuredClone(v));},remove:async k=>{files.delete(k);}});return{repo,files,fail:()=>{fail=true;}};}
 test('Legacy single-group migration backs up exactly once and preserves source/article IDs and saved state',async()=>{const x=memory(),old=initialState();old.sources=[{id:'source',title:'Author',url:'https://x.test/feed',group:'Original',tags:[]}];old.articles=[{id:'a',sourceId:'source',guid:'one',url:'https://x.test/a',title:'Article',author:'Author',summary:'',published:Date.now(),tags:['tag'],later:true,importedId:'document',contentKind:'feed'}];old.history=[{articleId:'a',openedAt:1,sourceId:'source',title:'Article',url:'https://x.test/a'}];x.files.set('state.json',structuredClone(old));x.files.set('translation-a.json',{sentinel:true});await x.repo.load();assert.deepEqual(x.files.get('state-single-group-backup.json'),old);assert.deepEqual(sourceGroups(x.repo.state.sources[0]),['Original']);assert.equal(x.repo.state.articles[0].id,'a');assert.equal(x.repo.state.articles[0].later,true);assert.equal(x.repo.state.articles[0].importedId,'document');assert.equal(x.repo.state.history[0].articleId,'a');assert.deepEqual(x.files.get('translation-a.json'),{sentinel:true});await x.repo.load();assert.deepEqual(x.files.get('state-single-group-backup.json'),old);await x.repo.update(s=>setSourceGroups(s.sources[0],[]));await x.repo.load();assert.deepEqual(sourceGroups(x.repo.state.sources[0]),[]);});
 test('Migration write failure leaves original untouched and retains a recovery backup',async()=>{const x=memory(),old=initialState();old.sources=[{id:'s',title:'S',url:'https://x.test',group:'A',tags:[]}];x.files.set('state.json',old);x.fail();await assert.rejects(x.repo.load());assert.deepEqual(x.files.get('state.json'),old);assert.deepEqual(x.files.get('state-single-group-backup.json'),old);});

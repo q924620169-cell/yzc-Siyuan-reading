@@ -5,7 +5,7 @@ import type {RssService} from '../service';
 import type {ImageCache} from '../cache';
 import type {Inbox} from '../inbox';
 import type {InlBridge} from '../bridge';
-import {el,button,iconButton,hostIconButton,articleBack,checkbox,action,input} from './dom';
+import {el,button,iconButton,hostIconButton,articleBack,checkbox,action,input,rssIcon} from './dom';
 import {renderSettings} from './settings';
 import {readerHtml} from './reader-format';
 import {HostTypography} from './host-typography';
@@ -88,25 +88,35 @@ export class RssView {
     this.sidebarSignature=this.navigationSignature();
     const s=this.options.repo.state,nav=this.sidebar,top=nav.scrollTop;nav.replaceChildren();
     const body=el('div','rss-nav-content'),browse=el('nav','rss-browse-nav');nav.append(body);body.append(browse);
-    for(const [mode,label,asset] of [['all','全部文章','all-articles'],['later','稍后看','later-nav'],['history','观看历史','history']] as const){const b=button('',()=>this.navigate({...allFilter(),mode,tags:mode==='history'?[]:[...this.filter.tags]}),'rss-nav-item rss-browse-item'),slot=el('span','rss-nav-icon'),icon=el('span','rss-icon');icon.dataset.asset=asset;icon.style.setProperty('--rss-icon-url',`url("/plugins/yzc-Siyuan-reading/assets/rss/${asset}.svg")`);slot.setAttribute('aria-hidden','true');slot.append(icon);b.append(slot,el('span','',label));b.setAttribute('aria-current',String(this.filter.mode===mode&&!this.draft));browse.append(b);}
+    for(const [mode,label,asset] of [['all','全部文章','all-articles'],['later','稍后看','later-nav'],['history','观看历史','history']] as const){const b=button('',()=>this.navigate({...allFilter(),mode,tags:mode==='history'?[]:[...this.filter.tags]}),'rss-nav-item rss-browse-item'),slot=el('span','rss-nav-icon');slot.setAttribute('aria-hidden','true');slot.append(rssIcon(asset));b.append(slot,el('span','',label));b.setAttribute('aria-current',String(this.filter.mode===mode&&!this.draft));browse.append(b);}
     const sourcesHead=el('div','rss-nav-section');
-    if(this.draft){sourcesHead.append(button('取消自选',()=>{this.draft=undefined;this.collapsed=this.beforeCollapsed??this.collapsed;this.beforeCollapsed=undefined;this.renderSidebar();},'rss-text-button'),button('完成筛选',()=>{const draft=this.draft!;this.beforeCollapsed=undefined;this.select(draft);},'rss-text-button'));body.append(sourcesHead,el('p','rss-filter-hint','勾选来源；可点击分组整行展开或收起'));}
+    if(this.draft){sourcesHead.append(button('取消自选',()=>{this.draft=undefined;this.collapsed=this.beforeCollapsed??this.collapsed;this.beforeCollapsed=undefined;this.renderSidebar();},'rss-text-button'),button('完成筛选',()=>{const draft=this.draft!;this.beforeCollapsed=undefined;this.select(draft);},'rss-text-button'));body.append(sourcesHead,el('p','rss-filter-hint','勾选来源；分组箭头只控制展开或收起'));}
     else{sourcesHead.append(el('span','rss-nav-label','来源 / 作者'),button('自选',()=>{this.beforeCollapsed=new Set(this.collapsed);this.draft={mode:'custom',sourceIds:sourceIdsFor(this.filter,s.sources),tags:[...this.filter.tags]};this.renderSidebar();},'rss-text-button'));body.append(sourcesHead);}
     if(!s.sources.length)body.append(button('添加第一个订阅',()=>this.settings(),'rss-nav-item rss-muted'));
     for(const group of [...new Set([...s.groups,...s.sources.flatMap(x=>sourceGroups(x).length?sourceGroups(x):['未分组'])])]){
-      const sources=s.sources.filter(x=>inGroup(x,group)),row=el('div','rss-group-row'),children=el('div','rss-group-children');
-      children.hidden=this.collapsed.has(group);
+      const sources=s.sources.filter(x=>inGroup(x,group)),row=el('div','rss-group-row rss-tree-row'),children=el('div','rss-group-children');
+      children.hidden=this.collapsed.has(group);children.dataset.group=group;
+      const expanded=()=>!this.collapsed.has(group);
+      const updateToggle=()=>{toggle.setAttribute('aria-expanded',String(expanded()));toggle.setAttribute('aria-label',`${expanded()?'收起':'展开'}分组 ${group}`);toggle.title=toggle.getAttribute('aria-label')!;};
       const expand=()=>{
         const opening=this.collapsed.has(group);
         if(opening){this.collapsed.delete(group);children.hidden=false;}else this.collapsed.add(group);
-        const full=children.scrollHeight,reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        children.getAnimations().forEach(a=>a.cancel());
+        const full=children.scrollHeight,reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches??false;
+        children.getAnimations?.().forEach(a=>a.cancel());
         if(!reduced&&children.animate){const animation=children.animate([{height:opening?'0px':`${full}px`,opacity:opening?0:1},{height:opening?`${full}px`:'0px',opacity:opening?1:0}],{duration:170,easing:'cubic-bezier(.2,.7,.3,1)'});void animation.finished.then(()=>{children.hidden=!opening;},()=>{});}else children.hidden=!opening;
-        groupButton.setAttribute('aria-expanded',String(opening));
+        updateToggle();
       };
-      const groupButton=button(group,()=>{expand();if(!this.draft){this.navigate({...allFilter(),mode:'group',value:group,tags:[...this.filter.tags]},true);this.sidebar.querySelectorAll('.rss-nav-item[aria-current=true]:not(.rss-tag)').forEach(b=>b.setAttribute('aria-current','false'));groupButton.setAttribute('aria-current','true');}},'rss-nav-item');
-      groupButton.setAttribute('aria-expanded',String(!children.hidden));groupButton.setAttribute('aria-current',String(this.filter.mode==='group'&&this.filter.value===group));
-      row.append(groupButton);
+      const toggle=button('',expand,'rss-group-toggle');toggle.append(rssIcon('chevron'));updateToggle();
+      const groupButton=button('',()=>{
+        if(this.draft){expand();return;}
+        this.navigate({...allFilter(),mode:'group',value:group,tags:[...this.filter.tags]},true);
+        this.sidebar.querySelectorAll('.rss-nav-item[aria-current=true]:not(.rss-tag)').forEach(b=>b.setAttribute('aria-current','false'));groupButton.setAttribute('aria-current','true');
+      },'rss-nav-item rss-tree-group');
+      const bookSlot=el('span','rss-tree-icon rss-tree-book');bookSlot.setAttribute('aria-hidden','true');bookSlot.append(rssIcon('book'));
+      const count=el('span','rss-tree-count',String(sources.length));count.setAttribute('aria-hidden','true');
+      groupButton.append(bookSlot,el('span','rss-tree-label',group),count);groupButton.title=`筛选 ${group} · ${sources.length} 个来源`;
+      groupButton.setAttribute('aria-current',String(!this.draft&&this.filter.mode==='group'&&this.filter.value===group));
+      row.append(toggle,groupButton);
       if(this.draft){
         const selection=groupSelection(sources.map(x=>x.id),new Set(this.draft.sourceIds));const check=checkbox('',selection==='all',checked=>{
           const selected=new Set(this.draft!.sourceIds);sources.forEach(x=>checked?selected.add(x.id):selected.delete(x.id));this.draft!.sourceIds=[...selected];if(checked)this.collapsed.add(group);this.renderSidebar();
@@ -114,8 +124,9 @@ export class RssView {
       }
       body.append(row,children);
       for(const source of sources){const child=el('div','rss-source-row');
-        if(this.draft)child.append(checkbox(source.title,this.draft.sourceIds.includes(source.id),checked=>{this.draft!.sourceIds=checked?[...new Set([...this.draft!.sourceIds,source.id])]:this.draft!.sourceIds.filter(id=>id!==source.id);if(groupSelection(sources.map(x=>x.id),new Set(this.draft!.sourceIds))==='all')this.collapsed.add(group);this.renderSidebar();}));
-        else{const b=button(source.title,()=>this.navigate({...allFilter(),mode:'source',value:source.id,tags:[...this.filter.tags]}),'rss-nav-item');b.title=source.error?`${source.title} · 刷新失败：${source.error}`:source.title;b.setAttribute('aria-current',String(this.filter.mode==='source'&&this.filter.value===source.id));child.append(b);}children.append(child);
+        const documentSlot=el('span','rss-tree-icon rss-tree-document');documentSlot.setAttribute('aria-hidden','true');documentSlot.append(rssIcon('document'));
+        if(this.draft){const check=checkbox(source.title,this.draft.sourceIds.includes(source.id),checked=>{this.draft!.sourceIds=checked?[...new Set([...this.draft!.sourceIds,source.id])]:this.draft!.sourceIds.filter(id=>id!==source.id);if(groupSelection(sources.map(x=>x.id),new Set(this.draft!.sourceIds))==='all')this.collapsed.add(group);this.renderSidebar();});check.classList.add('rss-tree-source-check');check.querySelector('span')!.before(documentSlot);child.append(check);}
+        else{const b=button('',()=>this.navigate({...allFilter(),mode:'source',value:source.id,tags:[...this.filter.tags]}),'rss-nav-item rss-tree-source');b.title=source.error?`${source.title} · 刷新失败：${source.error}`:source.title;b.setAttribute('aria-current',String(this.filter.mode==='source'&&this.filter.value===source.id));b.append(documentSlot,el('span','rss-tree-label',source.title));if(source.error)b.dataset.error='true';child.append(b);}children.append(child);
       }
     }
     body.append(el('div','rss-nav-section rss-nav-label','内容标签'));

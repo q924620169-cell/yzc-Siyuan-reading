@@ -7,6 +7,8 @@ import assert from 'node:assert/strict';
 const require=createRequire(import.meta.url),{chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 await mkdir('validation',{recursive:true});
 const output=await build({entryPoints:['plugin/src/adapters/shell-layout-adapter.ts'],bundle:true,write:false,format:'iife',globalName:'YZCShell'});
+const rssOutput=await build({entryPoints:['modules/rss/tests/browser-entry.ts'],bundle:true,write:false,format:'esm',platform:'browser'});
+const rssHtml=`<!doctype html><html data-theme-mode="light" data-style="notion"><head><meta charset="utf-8"><link id="pluginsStyleyzc-Siyuan-reading" rel="stylesheet" href="/index.css"><style>html,body{margin:0;height:100%;font-family:Arial}body{display:flex;background:#fff}#sidebar{width:304px;flex:none;height:100%;overflow:auto;border-right:1px solid #ddd}#reader{flex:1;min-width:0;height:100%}#messages{position:fixed;right:0;bottom:0;background:#fff;font:11px Arial;z-index:9}</style></head><body><div id="sidebar"></div><div id="reader"></div><div id="messages"></div><script type="module" src="/rss-entry.js"></script></body></html>`;
 const html=`<!doctype html><html data-light-theme="daylight"><head><style>
 html,body{margin:0;height:100%}body{display:flex;flex-direction:column;font-family:Arial}#toolbar{height:32px;flex:none;display:flex;align-items:center;box-sizing:border-box}#barWorkspace{width:180px}#drag{flex:1;height:100%}.toolbar__item{height:28px}.yzc-windows{flex:none!important;max-width:none!important}#layouts{display:flex;flex:1;min-height:0}#dockLeft{width:42px;flex:none}.layout__dockl{width:260px;flex:none}.layout__center{display:flex;flex-direction:column;flex:1;min-width:0}.protyle{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;container-type:inline-size}.protyle-content{overflow:auto;flex:1;min-height:0}.protyle-wysiwyg{padding:20px max(12px,calc((100cqw - 900px)/2));box-sizing:border-box}.protyle-title__input{padding:20px 40px}.code-block{height:900px;margin:0;padding:16px;white-space:pre;overflow:auto}.layout-tab-bar{display:flex}#status{display:flex;height:24px;flex:none;background:#ccc}.status__counter{margin-left:auto}#statusHelp{margin-left:8px}#native-row{height:30px}
 </style><link id="pluginsStyleyzc-Siyuan-reading" rel="stylesheet" href="/index.css"></head><body>
@@ -14,10 +16,13 @@ html,body{margin:0;height:100%}body{display:flex;flex-direction:column;font-fami
 <div id="layouts"><div id="dockLeft"></div><aside class="layout__dockl">Sidebar</aside><main class="layout__center"><div data-type="wnd"><div id="native-row" class="fn__flex"><ul class="layout-tab-bar">Native tabs</ul></div></div><div class="protyle yzc-has-outline"><div class="protyle-content"><div class="protyle-title"><div class="protyle-title__input">视觉文案 · 独立阶段</div></div><div class="protyle-wysiwyg"><div data-type="NodeHeading" data-subtype="h1">当前版本</div><div data-type="NodeParagraph">中文正文 English reading body.</div><div data-type="NodeHeading" data-subtype="h4">下级标题</div><div data-type="NodeCodeBlock" class="code-block">${'sample code line\n'.repeat(60)}</div></div></div><nav class="yzc-scrollspy"><div class="yzc-scrollspy-ticks">${'<i class="yzc-heading-tick"></i>'.repeat(8)}</div><div class="yzc-scrollspy-panel"><button>当前版本</button></div></nav></div></main></div><div id="status"><span class="status__counter">字符 123 字 45 块 8</span><span id="statusHelp">?</span></div></body></html>`;
 const server=createServer(async(req,res)=>{
   if(req.url==='/'){res.setHeader('Content-Type','text/html;charset=utf-8');res.end(html);return;}
+  if(req.url?.startsWith('/rss-entry.js')){res.setHeader('Content-Type','application/javascript;charset=utf-8');res.end(rssOutput.outputFiles[0].text);return;}
+  if(req.url?.startsWith('/rss')){res.setHeader('Content-Type','text/html;charset=utf-8');res.end(rssHtml);return;}
   const file=path.resolve('dist/package','.'+decodeURIComponent(req.url.split('?')[0]).replace(/^\/plugins\/yzc-Siyuan-reading/,''));
   if(!file.startsWith(path.resolve('dist/package')+path.sep)){res.writeHead(403).end();return;}
   try{res.setHeader('Content-Type',file.endsWith('.css')?'text/css':'font/ttf');res.end(await readFile(file));}catch{res.writeHead(404).end();}
 });await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+const base=`http://127.0.0.1:${server.address().port}`;
 const browser=await chromium.launch({headless:true,channel:process.env.BROWSER_CHANNEL||(process.platform==='win32'?'msedge':undefined)}),report={environment:'Chromium real layout; Default Light fixture; Windows and synthetic macOS geometry',cases:[]};
 async function checkFusion() {
   const {outputFiles}=await build({entryPoints:['plugin/src/adapters/window-adapter.ts'],bundle:true,write:false,format:'iife',globalName:'YZCWindows'});
@@ -118,5 +123,44 @@ try{
   await page.evaluate(()=>{window.shell.dispose();document.querySelector('#pluginsStyleyzc-Siyuan-reading').remove();});
   const off=await page.evaluate(()=>({native:getComputedStyle(document.querySelector('#native-row')).display,status:getComputedStyle(document.querySelector('#status')).position,gutter:document.querySelector('.protyle').style.getPropertyValue('--yzc-right-utility-gutter')}));
   if(off.native==='none'||off.status!=='static'||off.gutter)throw Error('Static visual layer persists after removal');
-  report.prepaint=prepaint;report.off=off;report.passed=true;await writeFile('validation/unified-ui.json',JSON.stringify(report,null,2));console.log('PASS static prepaint, wide/narrow pane collision, transparent footer, synthetic Mac geometry, three fonts, stylesheet removal');
+  const rssPage=await browser.newPage({viewport:{width:1360,height:800}}),rssErrors=[];rssPage.on('pageerror',error=>rssErrors.push(error.message));
+  try{
+    await rssPage.goto(base+'/rss');
+    await rssPage.waitForFunction(()=>window.fixture?.repo);
+    await rssPage.evaluate(async()=>{
+      const fixture=window.fixture;
+      fixture.service.refresh=async()=>({total:0,failed:0,skipped:0});
+      await fixture.repo.update(state=>{
+        state.groups=['个人成长'];
+        state.sources=[
+          {id:'dan',title:'Dan Koe — Future/Proof',url:'https://fixture.invalid/dan',type:'rss',group:'个人成长',groups:['个人成长'],tags:[]},
+          {id:'derek',title:'Derek Sivers — Articles',url:'https://fixture.invalid/derek',type:'rss',group:'个人成长',groups:['个人成长'],tags:[]}
+        ];
+        state.articles=[
+          {id:'article-1',sourceId:'dan',guid:'article-1',url:'https://fixture.invalid/1',title:'Uncorrelated perspectives',author:'Derek Sivers',summary:'Long-term investing.',published:Date.now(),tags:[],later:false,contentKind:'summary'},
+          {id:'article-2',sourceId:'derek',guid:'article-2',url:'https://fixture.invalid/2',title:'Make Learning Permanent',author:'Scott H. Young',summary:'Remember what you learn.',published:Date.now()-1000,tags:[],later:false,contentKind:'summary'}
+        ];
+      });
+      fixture.view.renderSidebar();fixture.view.renderList();
+    });
+    const group=rssPage.getByRole('button',{name:'个人成长',exact:true}),toggle=rssPage.locator('.rss-group-toggle'),children=rssPage.locator('.rss-group-children');
+    await group.waitFor();
+    const icons=await rssPage.locator('.rss-sidebar').evaluate(node=>({count:node.querySelectorAll('svg.rss-icon').length,uses:node.querySelectorAll('svg.rss-icon use').length,masks:[...node.querySelectorAll('svg.rss-icon')].filter(icon=>getComputedStyle(icon).maskImage!=='none').length,geometry:[...node.querySelectorAll('svg.rss-icon')].every(icon=>!!icon.querySelector('path,circle'))}));
+    assert.ok(icons.count>=7);assert.equal(icons.uses,0);assert.equal(icons.masks,0);assert.equal(icons.geometry,true);
+    assert.equal(await rssPage.locator('.rss-page-actions svg path').count(),2);
+    assert.equal(await group.locator('.rss-tree-book .rss-icon').getAttribute('data-asset'),'book');
+    assert.equal(await rssPage.locator('.rss-tree-source .rss-tree-document .rss-icon').count(),2);
+    assert.equal(await toggle.getAttribute('aria-expanded'),'true');
+    await toggle.click();await rssPage.waitForTimeout(250);
+    assert.equal(await toggle.getAttribute('aria-expanded'),'false');assert.equal(await children.isVisible(),false);
+    await toggle.click();await rssPage.waitForTimeout(250);
+    assert.equal(await toggle.getAttribute('aria-expanded'),'true');assert.equal(await children.isVisible(),true);
+    await group.click();await rssPage.waitForTimeout(100);
+    assert.equal((await rssPage.locator('.rss-page-title').textContent())?.trim(),'个人成长');
+    assert.equal(await group.getAttribute('aria-current'),'true');assert.equal(await children.isVisible(),true);
+    assert.deepEqual(rssErrors,[]);
+    await rssPage.screenshot({path:'validation/rss-document-tree.png'});
+    report.rssNavigation={passed:true,icons,tree:'separate disclosure, book/document icons, count, group filtering'};
+  }finally{await rssPage.close();}
+  report.prepaint=prepaint;report.off=off;report.passed=true;await writeFile('validation/unified-ui.json',JSON.stringify(report,null,2));console.log('PASS static prepaint, wide/narrow pane collision, transparent footer, synthetic Mac geometry, three fonts, inline RSS icons, document-tree groups, stylesheet removal');
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
