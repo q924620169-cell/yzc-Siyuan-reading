@@ -8,6 +8,16 @@ test('RSS icons are inline geometry and never depend on remote masks or host spr
   assert.equal(action.querySelector('.rss-icon')?.getAttribute('data-asset'),'later');
   assert.equal(refresh.querySelector('.rss-icon')?.getAttribute('data-asset'),'iconRefresh');
 });
+test('destructive and settings icons keep SiYuan host geometry instead of the document fallback',()=>{
+  const cases:[string,string][]=[['iconTrashcan','M19 6v14'],['iconSettings','M9.671 4.136'],['iconBack','m12 19-7-7 7-7'],['iconRefresh','M3 12a9 9 0']];
+  for(const [asset,marker] of cases){const icon=rssIcon(asset);
+    assert.equal(icon.getAttribute('data-asset'),asset);
+    assert.equal(icon.getAttribute('data-unknown'),null,`${asset} must not fall back to the document glyph`);
+    assert.equal(icon.getAttribute('viewBox'),'0 0 24 24');
+    assert.ok(icon.innerHTML.includes(marker),`${asset} must keep the host-native path`);
+  }
+  assert.equal(rssIcon('not-a-real-icon').getAttribute('data-unknown'),'1');
+});
 test('RSS source groups use document-tree rows with book and document icons',async()=>{
   const x=memory();await x.repo.load();
   await x.repo.update(s=>{s.groups=['个人成长'];s.sources=[

@@ -13,7 +13,7 @@ import {sourceManagement,sourceEditor,taxonomyManagement} from './settings-manag
 export interface SettingsOptions {
   repo:Repository;service:RssService;cache:ImageCache;bridge:()=>InlBridge|undefined;
   translation?:TranslationService;
-  message:(text:string,error?:boolean)=>void;back:()=>void;reschedule:()=>void;openSource?:(id:string)=>void;openArticle?:(id:string)=>void;articleTitle?:(article:import('../model').Article)=>string;groupRenamed?:(from:string,to:string)=>void;
+  message:(text:string,error?:boolean)=>void;back:()=>void;reschedule:()=>void;openSource?:(id:string)=>void;openArticle?:(id:string)=>void;articleTitle?:(article:import('../model').Article)=>string;groupRenamed?:(from:string,to:string)=>void;treeIcons?:()=>boolean;setTreeIcons?:(value:boolean)=>void;
 }
 export function renderSettings(host:HTMLElement,options:SettingsOptions):void{
   const {repo,service,cache,message}=options;
@@ -92,6 +92,9 @@ export function renderSettings(host:HTMLElement,options:SettingsOptions):void{
   });
   const sources=section('订阅源管理');const heading=el('div','rss-management-head'),sourceTitle=sources.querySelector('h2')!;sourceTitle.textContent='订阅源';heading.append(sourceTitle,el('span','rss-muted rss-source-total'),button('添加来源',()=>openAdd()));sources.prepend(heading);refreshSources=sourceManagement(sources,repo,service,message,id=>openDrawer(host,'编辑来源',(body,close)=>sourceEditor(body,repo,service,id,close,()=>{refreshSources();refreshTaxonomy();},message)));
   const taxonomy=section('分组与标签');refreshTaxonomy=taxonomyManagement(taxonomy,repo,message,host,{source:options.openSource,article:options.openArticle,title:options.articleTitle,groupRenamed:options.groupRenamed});
+  const iconToggle=checkbox('在侧边栏显示分组与来源图标',options.treeIcons?.()??true,value=>options.setTreeIcons?.(value));
+  iconToggle.classList.add('rss-icon-toggle');
+  taxonomy.append(el('h2','rss-settings-subtitle','侧边栏图标'),el('p','rss-muted','与文档区使用同一套显示策略：关闭后侧边栏只保留文字。'),iconToggle);
   const general=section('自动刷新与保留期限','插件启用且思源运行时执行自动刷新；关闭思源后不会后台抓取。稍后看及已导入记录不随期限清理。');
   const interval=input('刷新间隔（分钟，0 为手动）',String(repo.state.settings.refreshMinutes),'number');
   interval.field.min='0';interval.field.max='1440';

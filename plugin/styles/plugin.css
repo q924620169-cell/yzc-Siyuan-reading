@@ -64,7 +64,7 @@
 .yzc-flat-tree > ul[role="tree"] .yzc-inl-item[data-type="navigation-file"] {
   padding-left:calc(28px + var(--yzc-tree-depth) * 12px) !important;
 }
-.yzc-flat-tree .yzc-inl-item[data-type="navigation-file"] > .b3-list-item__icon {display:none;}
+.yzc-flat-tree .yzc-inl-item[data-type="navigation-file"] > .b3-list-item__icon {display:inline-flex;}
 .yzc-focus-tree .yzc-flat-tree > ul[role="tree"] .file-tree__row {padding-left:8px !important;}
 .yzc-focus-tree .yzc-flat-tree > .yzc-flat-local {margin-left:8px;}
 .yzc-focus-tree .yzc-flat-tree > .yzc-flat-hint {margin-left:8px;}

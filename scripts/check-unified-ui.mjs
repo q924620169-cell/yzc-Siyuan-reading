@@ -147,7 +147,9 @@ try{
     await group.waitFor();
     const icons=await rssPage.locator('.rss-sidebar').evaluate(node=>({count:node.querySelectorAll('svg.rss-icon').length,uses:node.querySelectorAll('svg.rss-icon use').length,masks:[...node.querySelectorAll('svg.rss-icon')].filter(icon=>getComputedStyle(icon).maskImage!=='none').length,geometry:[...node.querySelectorAll('svg.rss-icon')].every(icon=>!!icon.querySelector('path,circle'))}));
     assert.ok(icons.count>=7);assert.equal(icons.uses,0);assert.equal(icons.masks,0);assert.equal(icons.geometry,true);
-    assert.equal(await rssPage.locator('.rss-page-actions svg path').count(),2);
+    const pageIcons=await rssPage.locator('.rss-page-actions svg.rss-icon').evaluateAll(nodes=>nodes.map(n=>({asset:n.dataset.asset??null,geometry:!!n.querySelector('path,circle'),unknown:n.dataset.unknown??null})));
+    assert.deepEqual(pageIcons.map(icon=>icon.asset),['iconRefresh','iconSettings']);
+    assert.ok(pageIcons.every(icon=>icon.geometry&&icon.unknown===null));
     assert.equal(await group.locator('.rss-tree-book .rss-icon').getAttribute('data-asset'),'book');
     assert.equal(await rssPage.locator('.rss-tree-source .rss-tree-document .rss-icon').count(),2);
     assert.equal(await toggle.getAttribute('aria-expanded'),'true');

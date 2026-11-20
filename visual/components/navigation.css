@@ -1,6 +1,5 @@
 /* Deliberate host chrome reductions; CSS applies before plugin startup. */
 #toolbarVIP, #barCommand, #barDailyNote, #status [data-statusbar-entry="backgroundTask"] {display:none !important;}
-.sy__file li[data-type="navigation-file"] > :is(.b3-list-item__icon,.b3-list-item__graphic) {display:none !important;}
 .sy__outline .b3-list-item__graphic, .sy__outline .counter {display:none !important;}
 
 /* Native editor tabs stay in the host model, but never paint a second row.
