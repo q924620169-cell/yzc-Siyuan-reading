@@ -1,7 +1,7 @@
 export interface Source {
   id: string; url: string; title: string; group: string; groups?:string[]; tags: string[];
   etag?: string; modified?: string; fetchedAt?: number; error?: string;
-  type?: string; failures?: number; retryAfter?: number;
+  type?: string; failures?: number; retryAfter?: number; paused?:boolean;
   api?:{serviceId:string;sourceKey:string;listUrl?:string;cursor?:string;platform?:string;category?:string};
 }
 /** Legacy group remains a first-membership compatibility mirror; groups is authoritative when present. */

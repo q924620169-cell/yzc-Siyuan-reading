@@ -5,7 +5,7 @@
 /* Shared navigation inset: 12px outside + 10px within each row. */
 :root[data-yzc-spaces] {--yzc-section-label-color:color-mix(in srgb,var(--b3-theme-on-surface) 50%,transparent);}
 .yzc-space-switch {position:relative;isolation:isolate;display:flex;flex:none;justify-content:flex-start;gap:2px;align-items:center;padding:12px 12px 10px;min-height:36px;}
-.yzc-space-switch button {box-sizing:border-box;flex:none;display:flex;align-items:center;justify-content:flex-start;gap:0;width:auto;min-width:38px;height:36px;border:0;border-radius:8px;background:transparent;color:var(--b3-theme-on-surface);padding:0 10px;cursor:pointer;transition:background-color 160ms ease-out,color 160ms ease-out;}
+.yzc-space-switch button {box-sizing:border-box;flex:none;display:flex;align-items:center;justify-content:flex-start;gap:0;width:auto;min-width:38px;height:36px;border:0;border-radius:8px;background:transparent;color:var(--b3-theme-on-surface);padding:0 10px;cursor:pointer;transition:background-color var(--yzc-motion-feedback) var(--yzc-motion-ease),color var(--yzc-motion-feedback) var(--yzc-motion-ease);}
 .yzc-space-switch button[aria-pressed=true] {background:var(--b3-list-hover);color:var(--b3-theme-on-background);}
 .yzc-space-switch button:disabled {opacity:.35;cursor:default;}
 .yzc-space-switch button:focus-visible,.yzc-document-nav button:focus-visible {outline:2px solid var(--b3-theme-primary);outline-offset:2px;}
@@ -20,12 +20,16 @@
 .yzc-space-icon {width:18px;height:18px;}
 .yzc-native-space-icon {mask:none;-webkit-mask:none;background:none;}
 .yzc-native-space-icon svg {display:block;width:100%;height:100%;fill:currentColor;}
-.yzc-space-label {display:grid;grid-template-columns:0fr;min-width:0;overflow:hidden;font:600 14px/20px var(--b3-font-family);transition:grid-template-columns 200ms ease-out;}
+.yzc-space-label {display:grid;grid-template-columns:0fr;min-width:0;overflow:hidden;font:600 14px/20px var(--b3-font-family);transition:grid-template-columns var(--yzc-motion-fold) var(--yzc-motion-ease);}
 .yzc-space-label-clip {min-width:0;overflow:hidden;}
-.yzc-space-label-text {display:block;padding:0 7px;white-space:nowrap;mask-image:linear-gradient(to right,#000 calc(100% - 5px),transparent);}
+.yzc-space-label-text {display:block;max-width:clamp(70px,20vw,156px);padding:0 7px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;}
 .yzc-space-switch button[aria-pressed=true] .yzc-space-label {grid-template-columns:1fr;}
+.yzc-space-switch {z-index:2;}
+.yzc-space-rename {position:absolute;inset:auto 12px 0;transform:translateY(100%);display:flex;gap:6px;padding:6px;background:var(--b3-theme-background);border:1px solid var(--b3-border-color);border-radius:8px;box-shadow:0 6px 20px #0002;}
+.yzc-space-rename input {min-width:0;flex:1;}
+.yzc-space-rename button {height:30px;background:var(--b3-theme-primary);color:var(--b3-theme-on-primary);}
 .yzc-document-nav {padding:8px 12px 0;flex:none;color:var(--b3-theme-on-background);}
-.yzc-document-nav button {box-sizing:border-box;width:100%;height:36px;display:flex;align-items:center;gap:10px;padding:0 10px;margin:0;border:0;border-radius:6px;color:inherit;background:transparent;text-align:left;cursor:pointer;font:400 13px/1.45 var(--b3-font-family);transition:background-color 160ms ease-out;}
+.yzc-document-nav button {box-sizing:border-box;width:100%;height:36px;display:flex;align-items:center;gap:10px;padding:0 10px;margin:0;border:0;border-radius:6px;color:inherit;background:transparent;text-align:left;cursor:pointer;font:400 13px/1.45 var(--b3-font-family);transition:background-color var(--yzc-motion-feedback) var(--yzc-motion-ease);}
 .yzc-document-shortcuts {position:relative;isolation:isolate;display:flex;flex-direction:column;gap:3px;}
 .yzc-document-nav button:hover {background:var(--b3-list-hover);}
 .yzc-document-shortcuts button[aria-current=page] {background:var(--b3-list-hover);}
@@ -35,8 +39,8 @@
 .yzc-document-tree-head>.yzc-native-tree-actions {position:absolute;right:0;top:0;box-sizing:border-box;height:28px;min-height:0;margin:0;padding:0 10px 0 0;border:0;background:transparent;}
 .yzc-native-tree-actions>.block__logo,.yzc-native-tree-actions>[data-type=min] {display:none!important;}
 .yzc-document-tree-title {position:relative;overflow:hidden;}
-.yzc-document-tree-title>span {display:inline-block;transform:translateX(0);transition:transform 220ms cubic-bezier(.2,.8,.2,1);}
-.yzc-document-return-arrow {position:absolute;left:-6px;width:12px;height:12px;fill:currentColor;opacity:0;pointer-events:none;transition:opacity 160ms ease-out,transform 220ms cubic-bezier(.2,.8,.2,1);transform:translateX(0);}
+.yzc-document-tree-title>span {display:inline-block;transform:translateX(0);transition:transform var(--yzc-motion-reveal) var(--yzc-motion-ease);}
+.yzc-document-return-arrow {position:absolute;left:-6px;width:12px;height:12px;fill:currentColor;opacity:0;pointer-events:none;transition:opacity var(--yzc-motion-feedback) var(--yzc-motion-ease),transform var(--yzc-motion-reveal) var(--yzc-motion-ease);transform:translateX(0);}
 .yzc-document-tree-title[data-filtered]>span,.yzc-document-tree-title[data-filtered] .yzc-document-return-arrow {transform:translateX(18px);}
 .yzc-document-tree-title[data-filtered] .yzc-document-return-arrow {opacity:1;pointer-events:auto;}
 /* Owners create actions; INL supplies shared spacing and hierarchy only. */
@@ -47,7 +51,7 @@
 :root[data-yzc-spaces] .yr-list-heading .yr-button {width:24px;height:24px;min-height:0;padding:4px;color:var(--b3-theme-on-surface);}
 /* Match the native tree's hover fade without shifting the section heading.
  * RSS draft actions stay visible while selecting sources. */
-:root[data-yzc-spaces] :is(.yr-list-heading>.yr-button,.rss-nav-section>.rss-nav-label+.rss-text-button) {opacity:0;pointer-events:none;transition:opacity 300ms cubic-bezier(0,0,.2,1);}
+:root[data-yzc-spaces] :is(.yr-list-heading>.yr-button,.rss-nav-section>.rss-nav-label+.rss-text-button) {opacity:0;pointer-events:none;transition:opacity var(--yzc-motion-feedback) var(--yzc-motion-ease);}
 :root[data-yzc-spaces] .yr-sidebar:is(:hover,:has(:focus-visible)) .yr-list-heading>.yr-button,
 :root[data-yzc-spaces] .rss-sidebar:is(:hover,:has(:focus-visible)) .rss-nav-section>.rss-nav-label+.rss-text-button {opacity:1;pointer-events:auto;}
 @media(hover:none) {

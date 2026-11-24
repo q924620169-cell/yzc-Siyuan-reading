@@ -1,11 +1,13 @@
 export const ORDER_KEY='navigation-order.json';
 const defaults={spaces:['document','yzc-Reader','yzc-RSS'],shortcuts:['home','library','inbox']};
 export type OrderGroup=keyof typeof defaults;
-export interface NavigationOrder {version:1;spaces:string[];shortcuts:string[]}
+export interface NavigationOrder {version:1;spaces:string[];shortcuts:string[];spaceNames?:Record<string,string>}
+const spaceName=(value:unknown):string=>typeof value==='string'?value.replace(/\s+/g,' ').trim().slice(0,24):'';
 export function normalizeOrder(raw:unknown):NavigationOrder {
   const value=(raw&&typeof raw==='object'?raw:{}) as Partial<NavigationOrder>;
   const group=(key:OrderGroup)=>[...new Set([...(Array.isArray(value[key])?value[key]:[]),...defaults[key]])].filter(id=>defaults[key].includes(id));
-  return {version:1,spaces:group('spaces'),shortcuts:group('shortcuts')};
+  const spaceNames=Object.fromEntries(defaults.spaces.map(id=>[id,spaceName(value.spaceNames?.[id])]).filter(([,name])=>name));
+  return {version:1,spaces:group('spaces'),shortcuts:group('shortcuts'),...(Object.keys(spaceNames).length?{spaceNames}:{})};
 }
 /** Both navigation levels share a serialized, independent preference file. */
 export class NavigationPreferences {
@@ -16,6 +18,14 @@ export class NavigationPreferences {
   private preview?:{group:OrderGroup;order:string[]};
   constructor(raw:unknown,private save:(state:NavigationOrder)=>Promise<unknown>,private report:(error:unknown)=>void){this.state=normalizeOrder(raw);}
   order(group:OrderGroup):readonly string[]{return this.preview?.group===group?this.preview.order:this.state[group];}
+  name(id:string,fallback:string):string{return this.state.spaceNames?.[id]??fallback;}
+  rename(id:string,value:string):void{
+    if(!defaults.spaces.includes(id))return;
+    const names={...this.state.spaceNames};
+    const name=spaceName(value);
+    if(name)names[id]=name;else delete names[id];
+    this.commit(normalizeOrder({...this.state,spaceNames:names}));
+  }
   subscribe(listener:()=>void):()=>void{this.listeners.add(listener);return()=>this.listeners.delete(listener);}
   replace(raw:unknown):void{if(this.pending||this.preview)return;const next=normalizeOrder(raw);if(JSON.stringify(next)!==JSON.stringify(this.state)){this.state=next;this.emit();}}
   beginPreview(group:OrderGroup):boolean{if(this.preview)return false;this.preview={group,order:[...this.state[group]]};return true;}
@@ -36,7 +46,11 @@ export class NavigationPreferences {
   reset(group:OrderGroup):void{this.update(group,[...defaults[group]]);}
   private update(group:OrderGroup,order:string[]):void{
     if(JSON.stringify(order)===JSON.stringify(this.state[group]))return;
-    this.state={...this.state,[group]:order};const snapshot=normalizeOrder(this.state);this.emit();this.pending++;
+    this.commit({...this.state,[group]:order});
+  }
+  private commit(snapshot:NavigationOrder):void{
+    if(JSON.stringify(snapshot)===JSON.stringify(this.state))return;
+    this.state=snapshot;this.emit();this.pending++;
     this.queue=this.queue.then(()=>this.save(snapshot)).catch(this.report).finally(()=>{this.pending--;});
   }
   private emit():void{this.listeners.forEach(listener=>listener());}

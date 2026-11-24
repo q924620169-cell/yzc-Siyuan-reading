@@ -223,8 +223,8 @@ export class DocumentNavigation {
   private statusMenu(menu:StatusMenu,ids:string[]):void {
     ids=ids.filter(id=>!this.inboxId||this.docs.get(id)?.box!==this.inboxId);
     if(!ids.length)return;
-    menu.addItem({label:'INL 状态',submenu:(['now','library'] as const).map(status=>({
-      label:status==='now'?'Now':'Library',
+    menu.addItem({label:'设置分类',submenu:(['now','library'] as const).map(status=>({
+      label:status==='now'?'我的文档':'资料库',
       icon:ids.every(id=>this.categories.get(id)===status)?'iconCheck':undefined,
       click:()=>this.setStatus(ids,status),
     }))});

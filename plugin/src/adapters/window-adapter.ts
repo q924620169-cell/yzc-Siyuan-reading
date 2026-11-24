@@ -1,6 +1,7 @@
 import { WindowModel, type WindowDocument, type WindowState } from '../windows/window-model';
 import type { HostDocument, WindowHost } from './window-host';
 import type { ToolWindow } from '../windows/tool-contract';
+import { motion, playMotion, revealContent } from '../../../shared/motion.js';
 
 /** Owns navigation controls; native editors are opened/closed only through WindowHost. */
 export class WindowAdapter {
@@ -18,7 +19,8 @@ export class WindowAdapter {
   private busy = false;
   private disposed = false;
   private queue: Promise<void> = Promise.resolve();
-  private pointerDrag?: {key:string;pointerId:number;x:number;y:number;moved:boolean};
+  private pointerDrag?: {item:HTMLElement;key:string;pointerId:number;x:number;y:number;offset:number;moved:boolean};
+  private tabLandings = new Map<HTMLElement, Animation>();
   private suppressClick = false;
   private fromTree = false;
   private tools=new Map<string,ToolWindow>();
@@ -72,7 +74,8 @@ export class WindowAdapter {
     this.strip.addEventListener('pointerdown',this.onPointerDown,{signal:this.events.signal});
     this.strip.addEventListener('pointermove',this.onPointerMove,{signal:this.events.signal});
     this.strip.addEventListener('pointerup',this.onPointerUp,{signal:this.events.signal});
-    this.strip.addEventListener('pointercancel',()=>{this.pointerDrag=undefined;},{signal:this.events.signal});
+    this.strip.addEventListener('pointercancel',()=>this.finishPointerDrag(),{signal:this.events.signal});
+    this.strip.addEventListener('lostpointercapture',()=>this.finishPointerDrag(),{signal:this.events.signal});
     this.strip.addEventListener('click',event=>{if(this.suppressClick){this.suppressClick=false;event.preventDefault();event.stopImmediatePropagation();}},{capture:true,signal:this.events.signal});
     this.render();
     const target=this.model.active.document;
@@ -193,24 +196,49 @@ export class WindowAdapter {
     const target=event.target as Element;
     const item=target.closest<HTMLElement>('.yzc-window');
     if(event.button!==0 || !item || target.closest('.yzc-window-close'))return;
-    this.pointerDrag={key:item.dataset.windowKey!,pointerId:event.pointerId,x:event.clientX,y:event.clientY,moved:false};
+    const transform=this.tabLandings.has(item)?this.doc.defaultView!.getComputedStyle(item).transform:'none';
+    const offset=transform==='none'?0:new this.doc.defaultView!.DOMMatrixReadOnly(transform).m41;
+    this.pointerDrag={item,key:item.dataset.windowKey!,pointerId:event.pointerId,x:event.clientX,y:event.clientY,offset,moved:false};
   };
   private onPointerMove = (event:PointerEvent):void => {
     const drag=this.pointerDrag;
     if(!drag || drag.pointerId!==event.pointerId || !(event.buttons&1))return;
     if(!drag.moved && Math.hypot(event.clientX-drag.x,event.clientY-drag.y)>=6){
-      drag.moved=true;this.strip.setPointerCapture(event.pointerId);
+      drag.moved=true;this.tabLandings.get(drag.item)?.cancel();drag.item.dataset.dragging='true';
+      this.strip.setPointerCapture(event.pointerId);
     }
-    if(drag.moved)event.preventDefault();
+    if(!drag.moved)return;
+    event.preventDefault();
+    drag.item.style.transform=`translateX(${event.clientX-drag.x+drag.offset}px)`;
   };
   private onPointerUp = (event:PointerEvent):void => {
-    const drag=this.pointerDrag;this.pointerDrag=undefined;
-    if(!drag || !drag.moved)return;
-    this.suppressClick=true;
-    if(this.strip.hasPointerCapture(event.pointerId))this.strip.releasePointerCapture(event.pointerId);
+    if(this.pointerDrag?.pointerId!==event.pointerId)return;
+    if(!this.pointerDrag.moved){this.pointerDrag=undefined;return;}
     const target=this.doc.elementFromPoint(event.clientX,event.clientY)?.closest<HTMLElement>('.yzc-window');
-    if(target && this.strip.contains(target)){this.model.move(drag.key,target.dataset.windowKey!);this.changed();}
+    if(!target||!this.strip.contains(target)){this.finishPointerDrag();return;}
+    const bounds=target.getBoundingClientRect();
+    const before=event.clientX<bounds.left+bounds.width/2?target:target.nextElementSibling as HTMLElement|null;
+    this.finishPointerDrag(before?.dataset.windowKey??null);
   };
+  private finishPointerDrag(target?:string|null,animate=true):void {
+    const drag=this.pointerDrag;
+    this.pointerDrag=undefined;
+    if(!drag?.moved)return;
+    this.suppressClick=true;
+    if(this.strip.hasPointerCapture(drag.pointerId))this.strip.releasePointerCapture(drag.pointerId);
+    const from=drag.item.getBoundingClientRect().left;
+    drag.item.style.removeProperty('transform');delete drag.item.dataset.dragging;
+    if(target!==undefined&&target!==drag.key){this.model.move(drag.key,target);this.changed();}
+    const dx=from-drag.item.getBoundingClientRect().left;
+    if(animate&&drag.item.isConnected&&Math.abs(dx)>.5){
+      const animation=playMotion(drag.item,[{transform:`translateX(${dx}px)`},{transform:'translateX(0)'}],motion.settle);
+      if(animation){
+        this.tabLandings.set(drag.item,animation);
+        const done=()=>{if(this.tabLandings.get(drag.item)===animation)this.tabLandings.delete(drag.item);};
+        void animation.finished.then(done,done);
+      }
+    }
+  }
   private activate(): void {
     this.changed();this.notifyTools();
     const slot=this.model.active,tool=slot.tool && this.tools.get(slot.tool.id);
@@ -274,9 +302,7 @@ export class WindowAdapter {
   private onKey = (event: KeyboardEvent): void => {
     if(event.key==='Escape'){
       this.closeHistory();
-      const drag=this.pointerDrag;
-      if(drag?.moved && this.strip.hasPointerCapture(drag.pointerId))this.strip.releasePointerCapture(drag.pointerId);
-      this.pointerDrag=undefined;
+      this.finishPointerDrag();
     }
   };
   private openHistory(anchor: HTMLElement): void {
@@ -287,14 +313,16 @@ export class WindowAdapter {
       const button=this.doc.createElement('button');button.type='button';button.setAttribute('role','menuitem');button.textContent=item.title;button.onclick=() => this.browse(item);menu.append(button);
     }
     const rect=anchor.getBoundingClientRect();menu.style.right=`${Math.max(8,this.doc.documentElement.clientWidth-rect.right)}px`;menu.style.top=`${rect.bottom+4}px`;
-    this.history=menu;this.doc.body.append(menu);
+    this.history=menu;this.doc.body.append(menu);revealContent(menu);
   }
   private closeHistory(): void {this.history?.remove();this.history=undefined;}
   dispose(): void {
     for(const tool of this.tools.values())tool.active(false);
     this.tools.clear();this.toolVisibility.clear();
     this.listeners.clear();
-    this.disposed=true;this.events.abort();this.observer.disconnect();this.unsubscribe();this.closeHistory();this.nav.remove();this.empty.remove();
+    this.disposed=true;this.events.abort();this.finishPointerDrag(undefined,false);
+    this.tabLandings.forEach(animation=>animation.cancel());this.tabLandings.clear();
+    this.observer.disconnect();this.unsubscribe();this.closeHistory();this.nav.remove();this.empty.remove();
     for(const row of this.rows) {
       row.removeAttribute('data-yzc-native-tabs');
       row.removeAttribute('data-yzc-window-bar');

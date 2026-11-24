@@ -33,7 +33,7 @@ export const readingMethods={
   this.popover?.close();this.wakeCursor();let key,dismiss;
   const dialog=modal('书房设置',(body,footer,close)=>{
    dismiss=close;footer.remove();body.classList.add('yr-settings');
-   const position=settingRow('位置锁定','启动时在上次打开的位置',!!this.library.config.positionLock),cursor=settingRow('自动隐藏光标','静止片刻后隐藏',!!this.library.config.autoHideCursor),weread=settingRow('连接微信读书','按需同步书友想法，优先读取本地缓存',!!this.library.config.weread);
+   const position=settingRow('打开书房时继续上次阅读','回到上次打开的书籍和位置',!!this.library.config.positionLock),cursor=settingRow('自动隐藏光标','静止片刻后隐藏',!!this.library.config.autoHideCursor),weread=settingRow('连接微信读书','按需同步书友想法，优先读取本地缓存',!!this.library.config.weread);
    key=this.wereadSettings();
    const group=el('div','yr-settings-group'),extension=el('div','yr-settings-group');group.append(position.row,cursor.row);extension.append(weread.row,key.row);
    body.append(el('div','yr-settings-heading','阅读'),group,el('div','yr-settings-heading','扩展'),extension);

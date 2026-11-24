@@ -24,6 +24,88 @@ const server=createServer(async(req,res)=>{
 });await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const base=`http://127.0.0.1:${server.address().port}`;
 const browser=await chromium.launch({headless:true,channel:process.env.BROWSER_CHANNEL||(process.platform==='win32'?'msedge':undefined)}),report={environment:'Chromium real layout; Default Light fixture; Windows and synthetic macOS geometry',cases:[]};
+async function checkMotionChanges() {
+  const {outputFiles}=await build({stdin:{contents:`export {foldContent,spinRefresh} from './shared/motion.js'; export {openDrawer} from './modules/rss/src/ui/settings-drawer.ts';`,resolveDir:process.cwd()},bundle:true,write:false,format:'iife',globalName:'TestMotion'});
+  const page=await browser.newPage({viewport:{width:1280,height:900}});
+  try{
+    await page.goto(`http://127.0.0.1:${server.address().port}`);
+    await page.evaluate(()=>{
+      document.body.innerHTML='<aside style="width:240px;position:fixed;inset:0 auto 0 0;overflow:auto"><section id="fold" class="rss-group-children" hidden>'+('<div style="height:28px">来源</div>'.repeat(12))+'</section><section id="large" class="rss-group-children" hidden>'+('<div>长分组</div>'.repeat(240))+'</section></aside><main style="margin-left:260px;height:85vh;overflow:auto" id="long">'+('<p>长文 · 长文 · Long reading content</p>'.repeat(800))+'</main><div class="rss-tab rss-settings-dialog" id="settings"><div class="rss-settings-layout"><button id="launch">打开</button></div></div><button id="refresh"><svg></svg></button>';
+    });
+    await page.addScriptTag({content:outputFiles[0].text});
+    const result=await page.evaluate(async()=>{
+      const frame=()=>new Promise(resolve=>requestAnimationFrame(resolve));
+      const fold=document.querySelector('#fold'),long=document.querySelector('#long');
+      const {foldContent,openDrawer,spinRefresh}=TestMotion;
+      // Begin at first interactive paint, after preparing the long fixture.
+      await document.fonts.ready;
+      await frame();await frame();
+      const longFrames=[];
+      const observer=new PerformanceObserver(list=>longFrames.push(...list.getEntries().map(entry=>({
+        duration:entry.duration,blocking:entry.blockingDuration,
+        scripts:entry.scripts.map(script=>({invoker:script.invoker,duration:script.duration,layout:script.forcedStyleAndLayoutDuration})),
+      }))));
+      if(PerformanceObserver.supportedEntryTypes.includes('long-animation-frame'))observer.observe({type:'long-animation-frame'});
+      let maxReversalGap=0;
+      const sample=async(withMotion,runs)=>{
+        const time=[];
+        for(let run=0;run<runs;run++){
+          long.scrollTop=0;
+          let prev=await frame();
+          for(let i=0;i<26;i++){
+            long.scrollTop+=35;
+            if(withMotion&&i%6===0) {
+              const before=fold.getBoundingClientRect().height;
+              foldContent(fold,fold.inert||fold.hidden);
+              maxReversalGap=Math.max(maxReversalGap,Math.abs(before-fold.getBoundingClientRect().height));
+            }
+            const now=await frame();time.push(now-prev);prev=now;
+          }
+        }
+        await Promise.allSettled(fold.getAnimations().map(a=>a.finished));
+        time.sort((a,b)=>a-b);
+        return {frames:time.length,medianMs:time[Math.floor(time.length/2)],p95Ms:time[Math.ceil(time.length*.95)-1],maxMs:time.at(-1),over25Ms:time.filter(ms=>ms>25).length};
+      };
+      const cold=await sample(true,1);
+      const baseline=await sample(false,3);
+      const scrollingWithFold=await sample(true,3);
+      const large=document.querySelector('#large');
+      foldContent(large,true);
+      const largeHasAnimation=large.getAnimations().length>0;
+      const host=document.querySelector('#settings'),launch=document.querySelector('#launch');
+      launch.focus();
+      const close=openDrawer(host,'设置',(body)=>body.append(document.createElement('input')));
+      const shade=host.querySelector('.rss-drawer-shade');
+      for(let i=0;i<10&&Number(getComputedStyle(shade).opacity)===0;i++)await frame();
+      const shadeBefore=Number(getComputedStyle(shade).opacity);
+      const exit=close();
+      const shadeAfter=Number(getComputedStyle(shade).opacity);
+      const settingsReady=document.activeElement===launch&&!launch.closest('[inert]');
+      await exit;
+      const icon=document.querySelector('#refresh svg');
+      spinRefresh(icon.parentElement);
+      const refreshDuration=icon.getAnimations().at(0)?.effect.getTiming().duration;
+      observer.disconnect();
+      return {cold,baseline,scrollingWithFold,longFrames,maxReversalGap,largeHasAnimation,shadeBefore,shadeAfter,settingsReady,refreshDuration};
+    });
+    assert.ok(result.maxReversalGap<=1,'a fold reverses from the painted height');
+    assert.equal(result.largeHasAnimation,false,'a long list avoids per-frame layout');
+    assert.ok(result.shadeBefore>0&&result.shadeBefore<1&&Math.abs(result.shadeBefore-result.shadeAfter)<.05,'closing an entering drawer maintains scrim opacity');
+    assert.ok(result.settingsReady,'closing drawer restores focus immediately');
+    assert.equal(result.refreshDuration,480);
+    await page.emulateMedia({reducedMotion:'reduce'});
+    const reduced=await page.evaluate(async()=>{
+      const fold=document.querySelector('#fold');
+      TestMotion.foldContent(fold,false);
+      TestMotion.spinRefresh(document.querySelector('#refresh'));
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      return fold.hidden&&document.querySelector('#refresh svg').getAnimations().length===0;
+    });
+    assert.ok(reduced,'reduced motion completes a running effect and skips new motion');
+    report.motion={...result,reduced};
+    console.log('PASS fold continuity, drawer reversal, focus, refresh and reduced motion '+JSON.stringify(result));
+  } finally { await page.close(); }
+}
 async function checkFusion() {
   const {outputFiles}=await build({entryPoints:['plugin/src/adapters/window-adapter.ts'],bundle:true,write:false,format:'iife',globalName:'YZCWindows'});
   const page=await browser.newPage({viewport:{width:960,height:650}});
@@ -75,6 +157,24 @@ async function checkFusion() {
     await page.locator('.native-row > .yzc-windows').waitFor();
     assert.equal(await page.locator('.native-row > .yzc-windows [role="tab"]').count(),4);
     assert.ok(await page.locator('.yzc-window-empty').isVisible());
+    await page.setViewportSize({width:1120,height:650});
+    const tabs=page.locator('.native-row > .yzc-windows .yzc-window');
+    const order=()=>tabs.evaluateAll(items=>items.map(item=>item.dataset.windowKey));
+    const before=await order(),first=await tabs.nth(0).boundingBox(),second=await tabs.nth(1).boundingBox();
+    const x=first.x+first.width/2,y=first.y+first.height/2;
+    await page.mouse.move(x,y);
+    await page.mouse.down();
+    await page.mouse.move(x+42,y,{steps:5});
+    assert.ok(Math.abs((await tabs.nth(0).boundingBox()).x-first.x-42)<1,'window tab follows the pointer');
+    await page.keyboard.press('Escape');
+    await page.mouse.up();
+    assert.deepEqual(await order(),before,'Escape leaves the window order as it was');
+    await tabs.nth(0).evaluate(async tab=>{await Promise.allSettled(tab.getAnimations().map(a=>a.finished));});
+    await page.mouse.move(x,y);
+    await page.mouse.down();
+    await page.mouse.move(second.x+second.width*.75,y,{steps:8});
+    await page.mouse.up();
+    assert.deepEqual((await order()).slice(0,2),[before[1],before[0]],'drop commits the new window order');
     assert.equal(await page.locator('#native-tool').isVisible(),false);
     await page.evaluate(()=>showNative());
     await page.locator('#native-tab').click();
@@ -85,12 +185,13 @@ async function checkFusion() {
     await page.evaluate(()=>windowsAdapter.dispose());
     assert.ok(await page.locator('#native-tool').isVisible());
     assert.equal(await page.locator('[data-yzc-window-bar], [data-yzc-native-tabs], [data-yzc-window-empty]').count(),0);
-    console.log('PASS fused toolbar click-through, explicit windows, native tab and panel, and cleanup');
+    console.log('PASS fused toolbar, explicit windows, follow-pointer drag, Escape, drop, native panel and cleanup');
   } finally { await page.close(); }
 }
 
 try{
   await checkFusion();
+  await checkMotionChanges();
   const page=await browser.newPage({viewport:{width:1536,height:900}});await page.goto(`http://127.0.0.1:${server.address().port}/`);
   // Before any JS state/adapter, the static CSS already establishes the base.
   const prepaint=await page.evaluate(()=>({color:getComputedStyle(document.body).backgroundColor,native:getComputedStyle(document.querySelector('#native-row')).display,attributes:document.documentElement.hasAttribute('data-sv-theme')}));

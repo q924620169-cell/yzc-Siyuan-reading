@@ -1,4 +1,5 @@
-const timing = { duration: 170, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'both' as const };
+import {motion} from '../../../shared/motion.js';
+const timing = { ...motion.fold, fill: 'both' as const };
 type SavedStyle = { value: string; priority: string };
 type Running = { animation: Animation; restore(): void };
 

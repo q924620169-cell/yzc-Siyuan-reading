@@ -132,7 +132,7 @@ export class NativePDF{
   outer.addEventListener('keydown',event=>{
    if(event.key!=='Escape')return;
    const find=panel.querySelector('#viewFindButton');
-   const popup=[...document.querySelectorAll('dialog[open],.yr-popover,.b3-menu:not(.fn__none):not(.fn__hidden):not(.hidden)')].some(node=>node.checkVisibility());
+   const popup=[...document.querySelectorAll('dialog[open],.yr-popover:not([inert]),.b3-menu:not(.fn__none):not(.fn__hidden):not(.hidden)')].some(node=>node.checkVisibility());
    let control;
    if(find?.getAttribute('aria-expanded')==='true')control=find;
    else if(more.getAttribute('aria-expanded')==='true')control=more;

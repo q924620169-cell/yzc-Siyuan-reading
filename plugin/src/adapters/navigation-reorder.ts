@@ -17,7 +17,9 @@ export function reorderable(button:HTMLButtonElement,id:string,group:OrderGroup,
   });
   button.addEventListener('keydown',event=>{if(!event.altKey)return;const offset=['ArrowLeft','ArrowUp'].includes(event.key)?-1:['ArrowRight','ArrowDown'].includes(event.key)?1:0;if(offset){event.preventDefault();prefs.step(group,id,offset);button.focus();}});
   button.addEventListener('contextmenu',event=>{
-    event.preventDefault();const menu=new Menu();const order=prefs.order(group),index=order.indexOf(id);
+    event.preventDefault();event.stopPropagation();
+    if(group==='spaces')return;
+    const menu=new Menu();const order=prefs.order(group),index=order.indexOf(id);
     menu.addItem({label:'向前移动',disabled:index===0,click:()=>prefs.step(group,id,-1)});
     menu.addItem({label:'向后移动',disabled:index===order.length-1,click:()=>prefs.step(group,id,1)});
     menu.addItem({label:'恢复默认顺序',click:()=>prefs.reset(group)});menu.open({x:event.clientX,y:event.clientY});

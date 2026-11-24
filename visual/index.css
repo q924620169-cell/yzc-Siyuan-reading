@@ -1,4 +1,5 @@
 @import './core/tokens.css';
+@import './core/motion.css';
 @import './presets/notion.css';
 @import './presets/anthropic.css';
 @import './typography/fonts.css';

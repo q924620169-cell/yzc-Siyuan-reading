@@ -45,6 +45,7 @@ test('pointer reorder preserves active editor and keyed DOM; Escape cancels sort
   let captured=false;
   strip.setPointerCapture=()=>{captured=true;};strip.hasPointerCapture=()=>captured;strip.releasePointerCapture=()=>{captured=false;};
   doc.elementFromPoint=()=>items[0];
+  items[0].getBoundingClientRect=()=>new dom.window.DOMRect(0,0,144,28);
   const pointer=(type:string,x:number)=>{
     const event=new dom.window.MouseEvent(type,{bubbles:true,cancelable:true,button:0,buttons:1,clientX:x,clientY:10});
     Object.defineProperty(event,'pointerId',{value:1});items[1].querySelector('button')!.dispatchEvent(event);

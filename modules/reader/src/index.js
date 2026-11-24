@@ -13,6 +13,7 @@ export default class Reader extends ModuleContext{
   this.addIcons('<symbol id="iconYzcLibrary" viewBox="0 0 24 24"><path d="M4 4v16M9 4v16M14 5l5 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol><symbol id="iconYzcReader" viewBox="0 0 24 24"><path d="M3 4.5c3-1 6-1 9 1 3-2 6-2 9-1v15c-3-1-6-1-9 1-3-2-6-2-9-1zM12 5.5v15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>');
   document.addEventListener('yr:error',e=>showMessage('书房：'+e.detail,7000,'error'),{signal:this.stop.signal});
   this.ui=new ReaderUI(this.library,id=>openTab({app:this.app,doc:{id}}));
+  this.ui.uncategorized=()=>{if(!this.bridge?.importTarget)throw Error('未分类入口尚未就绪，请稍后重试。');return this.bridge.importTarget();};
   this.reading=this.ui.controls=new ReadingControls(this);
   this.ui.openPDF=(path,page)=>this.openRoomPDF(path,page);
   this.ui.focusReader=()=>this.openReaderTab();

@@ -4,6 +4,7 @@ import test from 'node:test';
 import { runInNewContext } from 'node:vm';
 import { buildSync } from 'esbuild';
 import { JSDOM } from 'jsdom';
+import { NavigationPreferences } from '../plugin/src/navigation-order';
 
 const bundle = buildSync({
   entryPoints: ['plugin/src/adapters/space-navigation.ts'],
@@ -45,9 +46,36 @@ function fixture() {
     status.append(toggle);
     return toggle;
   };
-  const mount = () => new mod.exports.SpaceNavigation(windows, doc);
-  return { dom, doc, rail, status, calls, attachToggle, mount };
+  const mount = (preferences?:NavigationPreferences) => new mod.exports.SpaceNavigation(windows, doc, preferences);
+  return { dom, doc, rail, status, calls, attachToggle, mount, windows };
 }
+
+test('only an already active space can be renamed by double click; right click stays silent',async()=>{
+  const {dom,doc,mount,windows,calls}=fixture();
+  const saved:unknown[]=[];
+  const fail=(error:unknown)=>assert.fail(String(error));
+  const preferences=new NavigationPreferences(null,async state=>{saved.push(state);},fail);
+  const navigation=mount(preferences);
+  try{
+    const reader=doc.querySelector<HTMLButtonElement>('[data-space="yzc-Reader"]')!;
+    const click=(type:string,detail:number)=>reader.dispatchEvent(new dom.window.MouseEvent(type,{bubbles:true,cancelable:true,detail}));
+    assert.equal(click('contextmenu',0),false);
+    assert.equal(click('click',1),true);
+    windows.activeSpace='yzc-Reader';
+    click('click',2);click('dblclick',2);
+    assert.equal(doc.querySelector('.yzc-space-rename'),null);
+    click('click',1);click('click',2);click('dblclick',2);
+    const field=doc.querySelector<HTMLInputElement>('.yzc-space-rename input')!;
+    assert.equal(field.value,'书房');
+    field.value='  自选名称  ';
+    field.form!.dispatchEvent(new dom.window.Event('submit',{bubbles:true,cancelable:true}));
+    assert.equal(reader.getAttribute('aria-label'),'自选名称');
+    await Promise.resolve();await Promise.resolve();
+    const restored=new NavigationPreferences(saved.at(-1),async()=>{},fail);
+    assert.equal(restored.name('yzc-Reader','书房'),'自选名称');
+    assert.deepEqual(calls,['yzc-Reader']);
+  }finally{navigation.dispose();dom.window.close();}
+});
 
 test('dock rail collapses once and the native toggle restores other entries without duplicates', async () => {
   const { dom, doc, rail, status, calls, attachToggle, mount } = fixture();

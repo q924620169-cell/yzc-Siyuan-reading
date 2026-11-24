@@ -53,7 +53,7 @@ test('default is Now; all statuses reuse native rows and retain required ancesto
 test('document menu changes only root internal status, preserves tags/roles/paths and keeps editor open',async()=>{
  const f=fixture();await settle();const menu:any[]=[];
  f.events.get('open-menu-doctree')!({detail:{type:'doc',items:[{id:B}],menu:{addItem:(item:any)=>menu.push(item)}}});
- assert.equal(menu[0].label,'INL 状态');assert.deepEqual(Array.from(menu[0].submenu,(s:any)=>s.label),['Now','Library']);menu[0].submenu.find((s:any)=>s.label==='Now').click();await settle();
+ assert.equal(menu[0].label,'设置分类');assert.deepEqual(Array.from(menu[0].submenu,(s:any)=>s.label),['我的文档','资料库']);menu[0].submenu.find((s:any)=>s.label==='我的文档').click();await settle();
  assert.equal(f.attrs.get(B)!['custom-inl-status'],'now');assert.equal(f.attrs.get(B)!.tags,'个人');
  assert.equal(f.docs[1].path,`/${A}/${B}.sy`);assert.equal(f.hidden(B),false);assert.equal(f.opens.length,0);
  const write=f.requests.find(r=>r.path?.endsWith('setBlockAttrs'));assert.deepEqual(Object.keys(write.body.attrs),['custom-inl-status']);

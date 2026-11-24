@@ -1,3 +1,4 @@
+import {motion} from '../../../shared/motion.js';
 export interface FlatMotionEntry {
     element: HTMLElement;
     branch?: string;
@@ -19,7 +20,7 @@ interface Range {
     from: number;
     to: number;
 }
-const timing = { duration: 170, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'both' as const };
+const timing = { ...motion.fold, fill: 'both' as const };
 const properties = ['display', 'visibility', 'transform', 'clip-path', 'pointer-events'];
 /** Animate occupied space in the existing flat list. A shared reveal boundary
  * clips each branch from its bottom; native rows keep their size and ownership.

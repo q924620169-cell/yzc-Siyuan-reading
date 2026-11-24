@@ -1,3 +1,4 @@
+import {motion} from '../../../shared/motion.js';
 import type{NavigationPreferences,OrderGroup}from'../navigation-order';
 
 interface Gesture {button:HTMLButtonElement;id:string;pointer:number;downX:number;downY:number;x:number;y:number;offsetX:number;offsetY:number;width:number;height:number;moved:boolean;originalTransform:string;abort:AbortController}
@@ -78,7 +79,7 @@ class NavigationDrag {
       const to=drag.button.getBoundingClientRect(),view=this.parent.ownerDocument.defaultView!;
       if(animate&&drag.button.animate&&!view.matchMedia?.('(prefers-reduced-motion: reduce)').matches){
         drag.button.dataset.settling='true';const x=from.left-to.left+(from.width-to.width)/2,y=from.top-to.top+(from.height-to.height)/2;
-        const animation=drag.button.animate([{transform:`translate(${x}px,${y}px) scale(${to.width?from.width/to.width:1},${to.height?from.height/to.height:1})`},{transform:drag.originalTransform||'none'}],{duration:210,easing:'cubic-bezier(.22,1,.36,1)'});this.landings.set(drag.button,animation);
+        const animation=drag.button.animate([{transform:`translate(${x}px,${y}px) scale(${to.width?from.width/to.width:1},${to.height?from.height/to.height:1})`},{transform:drag.originalTransform||'none'}],motion.settle);this.landings.set(drag.button,animation);
         const done=()=>{if(this.landings.get(drag.button)===animation){this.landings.delete(drag.button);delete drag.button.dataset.settling;}};void animation.finished.then(done,done);
       }
     }

@@ -1,3 +1,5 @@
+import {motion} from '../../../shared/motion.js';
+
 /** A view change animates the existing sidebar content only. Native tree
  * expansion, editor and reading instances keep their own lifecycle. */
 export class NavigationContentMotion {
@@ -10,7 +12,7 @@ export class NavigationContentMotion {
     const previous=this.animations.get(node),style=previous?this.doc.defaultView!.getComputedStyle(node):undefined;
     const opacity=style?.opacity??'.6',transform=style?.transform??`translateX(${direction*6}px)`;
     previous?.cancel();
-    const animation=node.animate([{opacity,transform},{opacity:1,transform:'translateX(0)'}],{duration:180,easing:'ease-out'});
+    const animation=node.animate([{opacity,transform},{opacity:1,transform:'translateX(0)'}],motion.reveal);
     this.animations.set(node,animation);
     void animation.finished.then(()=>{if(this.animations.get(node)===animation)this.animations.delete(node);},()=>{});
   }

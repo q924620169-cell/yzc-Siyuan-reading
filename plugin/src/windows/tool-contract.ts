@@ -13,6 +13,7 @@ export interface InlBridge {
   register(tool:ToolWindow):()=>void;
   open(id:string):void;
   close(id:string):void;
+  openDocument?(id:string,title:string):void;
   rootInboxTargets():Promise<{id:string;name:string}[]>;
   importTarget?(preferred?:string):Promise<{id:string;name:string}>;
   classifyImported?(id:string):Promise<void>;

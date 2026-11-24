@@ -18,20 +18,21 @@
   background: var(--sv-inline-code-bg); color: var(--sv-inline-code-text);
   font-family: var(--svs-font-mono); border-radius: var(--svs-radius);
 }
-/* SiYuan draws quotes with ::before, not the block border. Keep one short rule. */
+/* SiYuan positions nested block handles from the child edge. Match its quote inset. */
 .protyle-wysiwyg [data-type="NodeBlockquote"] {
   position: relative;
   border: 0 !important;
   background: transparent !important;
   border-radius: 0;
   box-shadow: none;
-  padding: 0 4px 0 24px;
+  padding: 0;
+  padding-inline: calc(.25em + 6px) 4px;
   color: var(--svs-text);
 }
 .protyle-wysiwyg [data-type="NodeBlockquote"]::before {
   content: "";
   position: absolute;
-  left: 4px;
+  inset-inline-start: 2px;
   top: 8px;
   bottom: 8px;
   width: 2px;
@@ -39,6 +40,22 @@
   border-radius: 0;
   background: var(--svs-text) !important;
   pointer-events: none;
+}
+/* Keep the host's SVG box and button intact for positioning, menus and drag. */
+.protyle-gutters > button[data-type="NodeParagraph"] > svg > use { opacity: 0; }
+.protyle-gutters > button[data-type="NodeParagraph"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 16px;
+  height: 16px;
+  background: var(--b3-theme-on-surface-light);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath stroke='%23000' stroke-width='1.9' stroke-linecap='round' d='M6 4h.01m4 0h.01M6 8h.01m4 0h.01m-4 4h.01m4 0h.01'/%3E%3C/svg%3E") center / contain no-repeat;
+  pointer-events: none;
+}
+.protyle-gutters > button[data-type="NodeParagraph"]:is(:hover, :focus-visible)::after {
+  background: var(--b3-theme-on-surface);
 }
 .protyle-wysiwyg [data-type="NodeTable"] td,
 .protyle-wysiwyg [data-type="NodeTable"] th {

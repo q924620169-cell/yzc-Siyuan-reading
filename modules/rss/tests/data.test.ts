@@ -21,6 +21,21 @@ function client(handler:(url:string,request:Record<string,unknown>)=>{body:strin
     return{status:200,headers:{},...r} as T;
   };return{remote:new RemoteClient(api),calls};
 }
+test('stopping a subscription retains its local articles; permanent deletion leaves saved document links',async()=>{
+  const m=memory(),c=client(()=>({body:feed()})),service=new RssService(m.repo,c.remote);
+  await m.repo.load();await service.add('https://site.test/feed','','',[]);
+  const source=m.repo.state.sources[0],article=m.repo.state.articles[0];
+  await m.repo.update(s=>{s.articles[0].published=1;s.settings.retentionDays=1;});
+  await service.setSourcePaused(source.id,true);
+  assert.equal((await service.refresh()).total,0);assert.equal(c.calls.length,1);
+  assert.equal(m.repo.state.articles[0].id,article.id);
+  await service.setSourcePaused(source.id,false);
+  assert.equal(m.repo.state.sources[0].paused,undefined);
+  await m.repo.update(s=>{s.imports[article.id]={notebook:'root',path:'/x',documentId:'doc',completed:true};});
+  await service.removeSource(source.id);
+  assert.equal(m.repo.state.articles.length,0);assert.equal(await m.repo.body(article.id),undefined);
+  assert.equal(m.repo.state.imports[article.id].documentId,'doc');
+});
 test('v1 migration preserves IDs, state, imports and body files and saves original backup exactly once',async()=>{
   const m=memory(),parsed=await parseFeed(feed(),'https://site.test/rss','s');
   const a={...parsed.items[0].article,later:true,importedId:'doc'};

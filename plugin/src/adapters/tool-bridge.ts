@@ -6,6 +6,7 @@ export class ToolBridge {
   readonly api:InlBridge;
   constructor(windows:WindowAdapter,inbox:InboxNotebook,private doc:Document=document){
     this.api={version:1,register:tool=>windows.registerTool(tool),open:id=>windows.openTool(id),close:id=>windows.closeTool(id),
+      openDocument:(id,title)=>windows.browse({id,title}),
       importTarget:pendingNotebook=>inbox.importTarget(pendingNotebook),
       rootInboxTargets:async()=>{
         const notebook=await inbox.find();

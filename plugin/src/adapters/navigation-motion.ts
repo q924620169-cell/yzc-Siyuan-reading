@@ -1,3 +1,4 @@
+import {motion} from '../../../shared/motion.js';
 /** FLIP keeps the existing controls under the pointer while their order changes.
  * Interrupted moves start at their current on-screen position, not the last slot. */
 export class NavigationMotion {
@@ -12,7 +13,7 @@ export class NavigationMotion {
     nodes.forEach((node,index)=>{if(parent.children[index+offset]!==node)parent.insertBefore(node,parent.children[index+offset]??null);});
     if(this.doc.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return;
     for(const node of nodes){if(node.dataset.dragging==='true')continue;const from=before.get(node)!,to=node.getBoundingClientRect(),x=from.left-to.left,y=from.top-to.top;if((Math.abs(x)<.5&&Math.abs(y)<.5)||!node.animate)continue;
-      const animation=node.animate([{transform:`translate(${x}px,${y}px)`},{transform:'translate(0,0)'}],{duration:210,easing:'cubic-bezier(.22,1,.36,1)'});this.animations.set(node,animation);
+      const animation=node.animate([{transform:`translate(${x}px,${y}px)`},{transform:'translate(0,0)'}],motion.settle);this.animations.set(node,animation);
       const done=()=>{if(this.animations.get(node)===animation)this.animations.delete(node);};void animation.finished.then(done,done);
     }
   }

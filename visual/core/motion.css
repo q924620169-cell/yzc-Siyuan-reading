@@ -1,0 +1,29 @@
+:root {
+  --yzc-motion-ease: cubic-bezier(.2,.7,.3,1);
+  --yzc-motion-feedback: 120ms;
+  --yzc-motion-reveal: 150ms;
+  --yzc-motion-fold: 170ms;
+}
+
+/* A press is visible on pointer down while the original target stays in place. */
+:is(.yzc-space-switch,.yzc-document-nav,.yzc-windows) button:active:not(:disabled),
+:is(.yr-button,.yr-cover,.rss-icon-button,.rss-button,.rss-text-button,.rss-action,.rss-nav-item):active:not(:disabled) {
+  opacity: .72;
+}
+
+@keyframes yzc-wait-pulse {
+  0%, 70%, 100% { opacity: .25; }
+  35% { opacity: .8; }
+}
+
+/* SiYuan's insertion plus keeps its native hit area and contextual placement. */
+.protyle-gutters button.protyle-gutters__plus {
+  animation: yzc-insert-in var(--yzc-motion-feedback) var(--yzc-motion-ease) both;
+}
+@keyframes yzc-insert-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .protyle-gutters button.protyle-gutters__plus { animation: none; }
+}

@@ -1,4 +1,11 @@
-// Same duration and easing as RSS group expansion and INL tree motion.
-const timing={duration:170,easing:'cubic-bezier(.2,.7,.3,1)'};
-const running=new WeakMap();
-export function toggleBranch(details,opening){const children=details.querySelector(':scope > .yr-course-children'),summary=details.querySelector(':scope > summary');if(!children)return;const previous=running.get(children),from=children.hidden||!details.open?0:children.getBoundingClientRect().height;const opacity=from?getComputedStyle(children).opacity:0;previous?.cancel();summary.setAttribute('aria-expanded',String(opening));details.open=true;children.hidden=false;const full=children.scrollHeight;const finish=()=>{details.open=opening;children.hidden=!opening;running.delete(children);};if(matchMedia('(prefers-reduced-motion:reduce)').matches||!children.animate){finish();return;}const animation=children.animate([{height:from+'px',opacity},{height:(opening?full:0)+'px',opacity:opening?1:0}],timing);running.set(children,animation);void animation.finished.then(()=>{if(running.get(children)===animation)finish();},()=>{});}
+import { foldContent } from '../../../shared/motion.js';
+
+export function toggleBranch(details, opening) {
+  const children = details.querySelector(':scope > .yr-course-children');
+  if (!children) return;
+  details.querySelector(':scope > summary').setAttribute('aria-expanded', String(opening));
+  foldContent(children, opening, {
+    expose: () => { details.open = true; },
+    settle: () => { details.open = opening; },
+  });
+}

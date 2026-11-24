@@ -47,11 +47,12 @@ export class WindowModel {
     this.state.slots.splice(index,1);
     if (this.state.active === key) this.state.active = this.state.slots[Math.min(index,this.state.slots.length-1)].key;
   }
-  move(key: string, before: string): void {
+  move(key: string, before: string | null): void {
     if (key === before) return;
-    const from = this.state.slots.findIndex(s => s.key === key), to = this.state.slots.findIndex(s => s.key === before);
+    const from = this.state.slots.findIndex(s => s.key === key), to = before===null?this.state.slots.length:this.state.slots.findIndex(s => s.key === before);
     if (from < 0 || to < 0) return;
     const [slot] = this.state.slots.splice(from,1);
-    this.state.slots.splice(this.state.slots.findIndex(s => s.key === before),0,slot);
+    const destination=before===null?this.state.slots.length:this.state.slots.findIndex(s => s.key === before);
+    this.state.slots.splice(destination,0,slot);
   }
 }

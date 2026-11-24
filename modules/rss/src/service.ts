@@ -38,7 +38,34 @@ export class RssService {
   async addApi(serviceId:string,choices:{id:string;name:string;category?:string;platform?:string}[],group:string|string[],listUrl?:string):Promise<void>{
     const prepared:Prepared[]=[];for(const choice of choices){const id=await digest("api:"+serviceId+":"+choice.id);if(this.repo.state.sources.some(s=>s.id===id))continue;const c=await this.apiSources.config(serviceId),source:Source={id,url:c.baseUrl,title:choice.name,group:(Array.isArray(group)?group[0]:group)||"未分组",groups:Array.isArray(group)?group:[group].filter(Boolean),tags:[],type:"api",api:{serviceId,sourceKey:choice.id,category:choice.category,platform:choice.platform,listUrl}};const result=await this.apiSources.listing(source);source.api!.cursor=result.cursor;prepared.push({source,items:result.items});}await this.commit(prepared,true);
   }
-  async moreApi(id:string):Promise<void>{const source=this.repo.state.sources.find(s=>s.id===id);if(!source?.api)return;const r=await this.apiSources.listing(source,true);await this.commit([{source:{...source,api:{...source.api,cursor:r.cursor}},items:r.items}]);}
+  async moreApi(id:string):Promise<void>{const source=this.repo.state.sources.find(s=>s.id===id);if(!source?.api||source.paused)return;const r=await this.apiSources.listing(source,true);await this.commit([{source:{...source,api:{...source.api,cursor:r.cursor}},items:r.items}]);}
+  async setSourcePaused(id:string,paused:boolean):Promise<void>{
+    await withWorkspaceLock('ingestion',()=>this.repo.update(s=>{
+      const source=s.sources.find(x=>x.id===id);
+      if(!source)throw Error('该来源已不存在。');
+      if(paused)source.paused=true;
+      else{delete source.paused;delete source.retryAfter;delete source.failures;delete source.error;}
+    }));
+  }
+  async removeSource(id:string):Promise<void>{
+    await withWorkspaceLock('ingestion',async()=>{
+      const removed:string[]=[];
+      await this.repo.update(s=>{
+        s.sources=s.sources.filter(source=>source.id!==id);
+        s.articles=s.articles.filter(article=>{
+          const previous=article.sourceIds??[article.sourceId];
+          if(!previous.includes(id))return true;
+          const remaining=previous.filter(source=>source!==id);
+          if(!remaining.length){removed.push(article.id);return false;}
+          article.sourceIds=remaining;
+          if(article.sourceId===id)article.sourceId=remaining[0];
+          article.records=article.records?.filter(record=>record.sourceId!==id);
+          return true;
+        });
+      });
+      for(const article of removed)await this.repo.removeBody(article);
+    });
+  }
   async prepare(input:string):Promise<SubscriptionPlan>{
     const plan=await resolveInput(input,this.remote);
     return{...plan,candidates:plan.candidates.map(c=>({...c,existing:this.repo.state.sources.some(s=>s.url===c.url)}))};
@@ -72,7 +99,7 @@ export class RssService {
     return withWorkspaceLock('ingestion',async()=>{
       if(this.closed)throw Error('RSS 已关闭。');
       await this.repo.load();
-      const usable=prepared.filter(p=>adding?!this.repo.state.sources.some(s=>s.id===p.source.id):this.repo.state.sources.some(s=>s.id===p.source.id));
+      const usable=prepared.filter(p=>adding?!this.repo.state.sources.some(s=>s.id===p.source.id):this.repo.state.sources.some(s=>s.id===p.source.id&&!s.paused));
       const articles=[...this.repo.state.articles],positions=new Map(articles.map((a,i)=>[a.id,i]));const incoming:Article[]=[];
       for(const p of usable)for(const item of p.items){
         const matched=item.article.api?articles.find(a=>a.sourceId===item.article.sourceId&&a.api?.entryId===item.article.api!.entryId):findIdentity(articles.filter(a=>!a.api),item.article),id=matched?.id??item.article.id;
@@ -103,7 +130,7 @@ export class RssService {
     });
   }
   refresh(sourceIds?:string[]):Promise<{failed:number;total:number;skipped:number}>{
-    const ids=[...new Set(sourceIds??this.repo.state.sources.map(s=>s.id))].sort(),key=JSON.stringify(ids);
+    const ids=[...new Set(sourceIds??this.repo.state.sources.filter(s=>!s.paused).map(s=>s.id))].sort(),key=JSON.stringify(ids);
     const pending=this.refreshing.get(key);if(pending)return pending;
     this.refreshScopes.set(key,ids);this.emitRefresh();const job=this.runRefresh(ids).finally(()=>{this.refreshing.delete(key);this.refreshScopes.delete(key);this.emitRefresh();});this.refreshing.set(key,job);return job;
   }
@@ -114,7 +141,7 @@ export class RssService {
   }
   private async runRefresh(sourceIds?:string[]):Promise<{failed:number;total:number;skipped:number}>{
     await this.repo.load();
-    const sources=this.repo.state.sources.filter(s=>!sourceIds||sourceIds.includes(s.id));let failed=0,skipped=0,cursor=0;
+    const sources=this.repo.state.sources.filter(s=>!s.paused&&(!sourceIds||sourceIds.includes(s.id)));let failed=0,skipped=0,cursor=0;
     await Promise.all(Array.from({length:Math.min(3,sources.length)},async()=>{
       while(cursor<sources.length&&!this.closed){
         const source=sources[cursor++];
@@ -150,8 +177,8 @@ export class RssService {
     const deadline=Date.now()-this.repo.state.settings.retentionDays*86400_000;
     const ids:string[]=[];
     await withWorkspaceLock('ingestion',async()=>{
-      await this.repo.update(s=>{s.articles=s.articles.filter((a,index)=>{
-        const remove=!a.later&&!a.importedId&&!s.imports[a.id]&&((a.published>0&&a.published<deadline)||index>=10000);
+      await this.repo.update(s=>{const stopped=new Set(s.sources.filter(source=>source.paused).map(source=>source.id));s.articles=s.articles.filter((a,index)=>{
+        const remove=!a.later&&!a.importedId&&!s.imports[a.id]&&!(a.sourceIds??[a.sourceId]).some(id=>stopped.has(id))&&((a.published>0&&a.published<deadline)||index>=10000);
         if(remove)ids.push(a.id);return !remove;
       });});
       for(const id of ids)await this.repo.removeBody(id);

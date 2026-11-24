@@ -1,13 +1,13 @@
+import {withWorkspaceLock} from '../storage';
 import type {Repository} from '../storage';
 import type {RssService} from '../service';
 import type {ImageCache} from '../cache';
 import type {InlBridge} from '../bridge';
-import {el,button,input,tagsFrom,action,checkbox} from './dom';
-import type {SubscriptionPlan} from '../sources';
+import {el,button,input,action,checkbox} from './dom';
+import type {SubscriptionCandidate,SubscriptionPlan} from '../sources';
 import {TRANSLATION,type TranslationService} from '../translation';
 import {apiSettings} from './api-settings';
-import {openDrawer,groupPicker} from './settings-drawer';
-import {segmented} from './settings-controls';
+import {openDrawer} from './settings-drawer';
 import {sourceManagement,sourceEditor,taxonomyManagement} from './settings-manage';
 
 export interface SettingsOptions {
@@ -31,64 +31,73 @@ export function renderSettings(host:HTMLElement,options:SettingsOptions):void{
     node.hidden=node.dataset.section!==(host.dataset.section||tabs[0]);sections.push(node);node.append(el('h2','',title));if(detail)node.append(el('p','rss-muted',detail));content.append(node);return node;
   };
   const openAdd=()=>openDrawer(host,'添加来源',(body,close)=>{
-  const subscriptions=body;
-  const form=el('form','rss-form'),url=input('订阅地址','','url'),title=input('名称（可选）'),group=groupPicker(repo.state.groups),tags=input('主题标签（逗号分隔）');
-  url.field.required=true;url.field.placeholder='https://example.com/feed.xml';
-  const add=button('添加订阅',()=>{});add.type='submit';
-  form.append(url.wrap,title.wrap,group.wrap,tags.wrap,add);
-  let revision=0;const finish=async()=>{revision++;await close();refreshSources();refreshTaxonomy();};
-  const preview=el('div','rss-subscription-preview');
-  const showPlan=(plan:SubscriptionPlan)=>{
-    preview.replaceChildren();
-    preview.append(el('h3','',plan.kind==='opml'?'导入预览':'选择订阅源'));
-    const selected=new Set(plan.candidates.filter(c=>!c.existing).map(c=>c.url));
-    if(plan.kind==='choose'){selected.clear();const first=plan.candidates.find(c=>!c.existing);if(first)selected.add(first.url);}
-    for(const c of plan.candidates){
-      const check=checkbox(`${c.title||c.url} · ${c.group}${c.existing?' · 已订阅，跳过':''}`,selected.has(c.url),checked=>{
-        if(plan.kind==='choose'){
-          selected.clear();
-          preview.querySelectorAll<HTMLInputElement>('input').forEach(input=>{input.checked=false;});
-          if(checked){selected.add(c.url);check.querySelector('input')!.checked=true;}
-        }else checked?selected.add(c.url):selected.delete(c.url);
-      });
-      check.querySelector('input')!.disabled=!!c.existing;preview.append(check);
-    }
-    const cancel=button('取消',()=>{revision++;preview.replaceChildren();});
-    const confirm=button(plan.kind==='opml'?'确认导入':'确认添加',()=>void action(confirm,async()=>{
-      cancel.disabled=true;
-      const candidates=plan.candidates.filter(c=>selected.has(c.url)&&!c.existing);
-      if(!candidates.length)throw Error('请选择尚未订阅的来源。');
-      if(plan.kind==='choose'){
-        const c=candidates[0];await service.add(c.url,title.field.value||c.title,group.value(),tagsFrom(tags.field.value));
-        message('订阅已添加并抓取。');await finish();
-      }else{
-        const result=await service.importCandidates(candidates.map(c=>group.value().length?{...c,groups:[...new Set([c.group,...group.value()])]}:c));
-        message(`已添加 ${result.added} 个来源${result.failed.length?`，${result.failed.length} 个失败。`:'。'}`);
+    const form=el('form','rss-subscribe-form'),url=input('订阅地址','','url');
+    url.field.required=true;url.field.placeholder='粘贴网站、RSS 或 OPML 地址';
+    const add=button('添加订阅',()=>{});add.type='submit';add.classList.add('rss-primary');
+    form.append(url.wrap,add);
+    const file=input('导入 OPML 文件','','file').field;
+    file.accept='.opml,.xml';file.hidden=true;
+    const chooseFile=button('选择 OPML 文件',()=>{file.value='';file.click();});
+    const status=el('p','rss-muted'),preview=el('div','rss-subscription-preview');
+    status.setAttribute('role','status');status.hidden=true;
+    const advanced=el('details','rss-subscribe-advanced'),summary=el('summary','','高级：API 服务'),api=el('div','rss-api-inputs');
+    advanced.append(summary,api);
+    advanced.addEventListener('toggle',()=>{if(advanced.open&&!api.childNodes.length)apiSettings(api,service,message,()=>{void finish();});});
+    body.append(form,chooseFile,file,status,preview,advanced);
+    const finish=async()=>{await close();refreshSources();refreshTaxonomy();};
+    const setStatus=(text:string,error=false)=>{status.hidden=!text;status.textContent=text;status.classList.toggle('rss-error',error);};
+    const run=async(work:()=>Promise<void>,text:string)=>{
+      if(add.disabled)return;
+      add.disabled=chooseFile.disabled=true;setStatus(text);
+      try{await work();if(body.isConnected)setStatus('');}
+      catch(error){setStatus((error as Error).message,true);}
+      finally{add.disabled=chooseFile.disabled=false;}
+    };
+    const subscribe=async(candidates:SubscriptionCandidate[],kind:SubscriptionPlan['kind'])=>{
+      if(kind==='opml'){
+        const result=await service.importCandidates(candidates);
+        if(!result.added&&result.failed.length)throw Error(result.failed.join('；'));
         await finish();
+        message(`已添加 ${result.added} 个来源。`);
         if(result.failed.length)message(result.failed.join('；'),true);
+      }else{
+        const candidate=candidates[0];
+        await service.add(candidate.url,candidate.title,candidate.group,[]);
+        await finish();message('订阅已添加。');
       }
-    },e=>{cancel.disabled=false;report(e);}));
-    preview.append(confirm,cancel);
-  };
-  form.onsubmit=e=>{e.preventDefault();void action(add,async()=>{
-    const token=++revision;preview.replaceChildren();
-    const plan=await service.prepare(url.field.value);
-    if(token!==revision||!body.isConnected||body.closest<HTMLElement>('.rss-drawer-overlay')?.dataset.closing)return;
-    if(plan.kind!=='feed'){showPlan(plan);return;}
-    const candidate=plan.candidates[0];
-    await service.add(candidate.url,title.field.value||candidate.title,group.value(),tagsFrom(tags.field.value));
-    message('订阅已添加并抓取。');await finish();
-  },report);};
-  subscriptions.append(form);
-  const opml=input('导入 OPML 文件','','file');opml.field.accept='.opml,.xml';opml.field.hidden=true;opml.field.setAttribute('aria-label','导入 OPML 文件');const fileRow=el('div','rss-file-picker'),fileName=el('span','rss-file-name','未选择文件'),chooseFile=button('选择文件',()=>{opml.field.value='';opml.field.click();});fileName.setAttribute('role','status');fileRow.append(el('span','rss-muted','导入 OPML'),chooseFile,fileName,opml.field);
-  opml.field.onchange=()=>{const file=opml.field.files?.[0];if(!file)return;fileName.textContent=file.name;fileName.title=file.name;
-    opml.field.disabled=true;chooseFile.disabled=true;const token=++revision;
-    void file.text().then(text=>service.prepare(text)).then(plan=>{
-      if(token===revision&&body.isConnected&&!body.closest<HTMLElement>('.rss-drawer-overlay')?.dataset.closing)showPlan(plan);
-    }).catch(report).finally(()=>{opml.field.disabled=false;chooseFile.disabled=false;});
-  };
-  subscriptions.append(fileRow,preview);
-  const rssInputs=el('div','rss-rss-inputs'),apiInputs=el('div','rss-api-inputs');rssInputs.append(el('h3','rss-settings-subtitle','选择来源'),form,fileRow,preview);const apiMode=host.dataset.subscriptionMethod==='api';rssInputs.hidden=apiMode;apiInputs.hidden=!apiMode;apiSettings(apiInputs,service,message,()=>{void finish();});const methods=segmented(['RSS / Atom','API 服务'],apiMode?1:0,i=>{rssInputs.hidden=i===1;apiInputs.hidden=i===0;host.dataset.subscriptionMethod=i===1?'api':'rss';},'订阅方式');subscriptions.append(methods,rssInputs,apiInputs);
+    };
+    const prepare=async(value:string)=>{
+      preview.replaceChildren();
+      const plan=await service.prepare(value);
+      if(!body.isConnected||body.closest<HTMLElement>('.rss-drawer-overlay')?.dataset.closing)return;
+      const available=plan.candidates.filter(candidate=>!candidate.existing);
+      if(!available.length)throw Error('这些来源已经添加。已停止的来源可在订阅源中恢复。');
+      if(available.length===1){await subscribe(available,plan.kind);return;}
+      const selection=el('form','rss-subscription-selection');
+      selection.append(el('h3','',plan.kind==='opml'?'选择要导入的订阅':'为这个网站选择订阅源'));
+      const selected=new Set(plan.kind==='opml'?available.map(candidate=>candidate.url):[available[0].url]);
+      const confirm=button(plan.kind==='opml'?'导入所选订阅':'添加所选订阅',()=>{});confirm.type='submit';
+      for(const candidate of available){
+        const field=checkbox(candidate.title||candidate.url,selected.has(candidate.url),checked=>{
+          if(plan.kind!=='opml')selected.clear();
+          if(checked)selected.add(candidate.url);else selected.delete(candidate.url);
+          confirm.disabled=!selected.size;
+        });
+        if(plan.kind!=='opml'){const radio=field.querySelector('input')!;radio.type='radio';radio.name='rss-feed-choice';}
+        selection.append(field);
+      }
+      const cancel=button('取消',()=>preview.replaceChildren());
+      selection.append(confirm,cancel);preview.append(selection);
+      selection.onsubmit=event=>{
+        event.preventDefault();
+        if(confirm.disabled)return;
+        confirm.disabled=cancel.disabled=true;
+        void run(()=>subscribe(available.filter(candidate=>selected.has(candidate.url)),plan.kind),'正在添加订阅…')
+          .finally(()=>{confirm.disabled=cancel.disabled=false;});
+      };
+    };
+    form.onsubmit=event=>{event.preventDefault();void run(()=>prepare(url.field.value),'正在识别订阅地址…');};
+    file.onchange=()=>{const chosen=file.files?.[0];if(chosen)void run(async()=>prepare(await chosen.text()),'正在读取订阅文件…');};
   });
   const sources=section('订阅源管理');const heading=el('div','rss-management-head'),sourceTitle=sources.querySelector('h2')!;sourceTitle.textContent='订阅源';heading.append(sourceTitle,el('span','rss-muted rss-source-total'),button('添加来源',()=>openAdd()));sources.prepend(heading);refreshSources=sourceManagement(sources,repo,service,message,id=>openDrawer(host,'编辑来源',(body,close)=>sourceEditor(body,repo,service,id,close,()=>{refreshSources();refreshTaxonomy();},message)));
   const taxonomy=section('分组与标签');refreshTaxonomy=taxonomyManagement(taxonomy,repo,message,host,{source:options.openSource,article:options.openArticle,title:options.articleTitle,groupRenamed:options.groupRenamed});
@@ -123,11 +132,23 @@ export function renderSettings(host:HTMLElement,options:SettingsOptions):void{
   const clearImages=button('清空图片缓存',()=>void action(clearImages,async()=>{await cache.clear();renderSettings(host,options);message('图片缓存已清空。');},report));
   images.append(limit.wrap,saveLimit,clearImages);
   const cleanup=section('本地文章清理','删除未收藏、未导入的缓存文章；保留订阅、稍后看、导入记录及所有真实思源文档。下次刷新可重新抓取。');
-  const clear=button('清理普通文章',()=>void action(clear,async()=>{
-    const ids=repo.state.articles.filter(a=>!a.later&&!a.importedId).map(a=>a.id);
-    await repo.update(s=>{s.articles=s.articles.filter(a=>a.later||a.importedId);s.sources.forEach(x=>{delete x.etag;delete x.modified;});});
-    for(const id of ids)await repo.removeBody(id);
+  const danger=el('details','rss-source-removal'),summary=el('summary','','清理普通文章');
+  const confirm=el('div','rss-confirm');
+  const clear=button('确认清理',()=>void action(clear,async()=>{
+    const ids:string[]=[];
+    await withWorkspaceLock('ingestion',async()=>{
+      await repo.update(s=>{
+        s.articles=s.articles.filter(a=>{
+          if(a.later||a.importedId||s.imports[a.id])return true;
+          ids.push(a.id);return false;
+        });
+        s.sources.forEach(x=>{delete x.etag;delete x.modified;});
+      });
+      for(const id of ids)await repo.removeBody(id);
+    });
     message(`已清理 ${ids.length} 篇普通文章。`);renderSettings(host,options);
-  },report));cleanup.append(clear);
+  },report));
+  confirm.append(el('p','','将删除未收藏、未保存到思源的本地文章及其阅读记录。'),clear);
+  danger.append(summary,confirm);cleanup.append(danger);
   activate(host.dataset.section||tabs[0]);
 }
